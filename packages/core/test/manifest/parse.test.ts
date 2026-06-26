@@ -34,6 +34,34 @@ test("parseManifest defaults vars/exclude", () => {
   expect(m.repositories.dotfiles!.exclude).toEqual([]);
 });
 
+test("parseManifest rejects non-string profiles entries (no coercion)", () => {
+  expect(() => parseManifest({
+    account: "kukv", revision: 1, sourceCommit: "x",
+    repositories: { dotfiles: { profiles: [1] } },
+  })).toThrow(/profiles/i);
+});
+
+test("parseManifest rejects non-string exclude entries", () => {
+  expect(() => parseManifest({
+    account: "kukv", revision: 1, sourceCommit: "x",
+    repositories: { dotfiles: { profiles: [], exclude: [true] } },
+  })).toThrow(/exclude/i);
+});
+
+test("parseManifest rejects vars that is not an object", () => {
+  expect(() => parseManifest({
+    account: "kukv", revision: 1, sourceCommit: "x",
+    repositories: { dotfiles: { profiles: [], vars: "oops" } },
+  })).toThrow(/vars/i);
+});
+
+test("parseManifest rejects vars with non-string values", () => {
+  expect(() => parseManifest({
+    account: "kukv", revision: 1, sourceCommit: "x",
+    repositories: { dotfiles: { profiles: [], vars: { codeowner: 5 } } },
+  })).toThrow(/vars/i);
+});
+
 test("isNewerRevision enforces monotonic CAS", () => {
   expect(isNewerRevision(6, 5)).toBe(true);
   expect(isNewerRevision(5, 5)).toBe(false);

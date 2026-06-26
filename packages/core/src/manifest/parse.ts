@@ -15,13 +15,34 @@ export function parseManifest(input: unknown): Manifest {
 
   const repositories: Record<string, RepoEntry> = {};
   for (const name of names) {
-    const r = repos[name] as Record<string, unknown>;
-    if (!Array.isArray(r?.profiles)) throw new Error(`manifest: ${name}.profiles must be an array`);
-    repositories[name] = {
-      profiles: r.profiles.map(String),
-      vars: (r.vars as Record<string, string>) ?? {},
-      exclude: Array.isArray(r.exclude) ? r.exclude.map(String) : [],
-    };
+    const r = repos[name];
+    if (typeof r !== "object" || r === null) throw new Error(`manifest: ${name} must be an object`);
+    const entry = r as Record<string, unknown>;
+
+    if (!Array.isArray(entry.profiles) || !entry.profiles.every((p) => typeof p === "string")) {
+      throw new Error(`manifest: ${name}.profiles must be an array of strings`);
+    }
+
+    let exclude: string[] = [];
+    if (entry.exclude !== undefined) {
+      if (!Array.isArray(entry.exclude) || !entry.exclude.every((e) => typeof e === "string")) {
+        throw new Error(`manifest: ${name}.exclude must be an array of strings`);
+      }
+      exclude = entry.exclude as string[];
+    }
+
+    let vars: Record<string, string> = {};
+    if (entry.vars !== undefined) {
+      if (typeof entry.vars !== "object" || entry.vars === null || Array.isArray(entry.vars)) {
+        throw new Error(`manifest: ${name}.vars must be an object of string values`);
+      }
+      for (const [k, v] of Object.entries(entry.vars)) {
+        if (typeof v !== "string") throw new Error(`manifest: ${name}.vars.${k} must be a string`);
+      }
+      vars = entry.vars as Record<string, string>;
+    }
+
+    repositories[name] = { profiles: entry.profiles as string[], vars, exclude };
   }
   return { account: o.account, revision: o.revision, sourceCommit: o.sourceCommit, repositories };
 }

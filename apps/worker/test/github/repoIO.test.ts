@@ -39,3 +39,14 @@ test("readActualFiles returns map; missing paths omitted", async () => {
   const got = await io.readActualFiles(["renovate.json", ".github/CODEOWNERS"], "main");
   expect(got).toEqual({ "renovate.json": "A\n" });
 });
+
+test("readActualFiles decodes multibyte UTF-8 content losslessly", async () => {
+  const utf8b64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+  const text = "日本語🚀\n";
+  const io = new RepoIO({
+    client: client({ "/contents/x.md": { content: utf8b64(text), encoding: "base64" } }),
+    repo: "o/r",
+  });
+  const got = await io.readActualFiles(["x.md"], "main");
+  expect(got["x.md"]).toBe(text);
+});

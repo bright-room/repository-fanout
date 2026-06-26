@@ -45,3 +45,13 @@ test("profileExists is true when profiles/<tag> appears in tree", async () => {
   expect(await src.profileExists("terraform")).toBe(true);
   expect(await src.profileExists("nope")).toBe(false);
 });
+
+test("readFile decodes multibyte UTF-8 content losslessly", async () => {
+  const utf8b64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+  const text = "# 見出し 🚀\n";
+  const client = clientReturning({
+    "/contents/base/files/README.md": { content: utf8b64(text), encoding: "base64" },
+  });
+  const src = new GitHubTemplateSource({ client, repo: "o/c" });
+  expect(await src.readFile("base/files/README.md")).toBe(text);
+});

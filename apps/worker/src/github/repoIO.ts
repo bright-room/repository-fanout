@@ -1,4 +1,5 @@
 import { GitHubClient, type FileChange } from "@repository-fanout/core";
+import { decodeBase64Utf8 } from "./base64.js";
 
 export interface RepoIOOpts { client: GitHubClient; repo: string; }
 
@@ -24,7 +25,7 @@ export class RepoIO {
         const r = await this.o.client.request<{ content: string; encoding: string }>(
           "GET", this.p(`/contents/${encodeURI(path)}?ref=${encodeURIComponent(ref)}`),
         );
-        out[path] = atob(r.content.replace(/\n/g, ""));
+        out[path] = decodeBase64Utf8(r.content);
       } catch { /* 404 = 未配置 */ }
     }
     return out;

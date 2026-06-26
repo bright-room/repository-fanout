@@ -1,4 +1,5 @@
 import { GitHubClient, type ProfileManifest, type TemplateSource } from "@repository-fanout/core";
+import { decodeBase64Utf8 } from "./base64.js";
 
 export interface TemplateSourceOpts {
   client: GitHubClient;
@@ -33,7 +34,7 @@ export class GitHubTemplateSource implements TemplateSource {
         "GET",
         `/repos/${this.opts.repo}/contents/${encodeURI(path)}`,
       );
-      return atob(r.content.replace(/\n/g, ""));
+      return decodeBase64Utf8(r.content);
     } catch {
       return null;
     }

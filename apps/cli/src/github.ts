@@ -28,6 +28,7 @@ export function templateSource(client: GitHubClient, repo: string): TemplateSour
       );
       return decodeBase64Utf8(r.content);
     } catch {
+      // 取得失敗（404 等）はすべて「未配置」とみなす。
       return null;
     }
   };
@@ -59,7 +60,7 @@ export function actualReader(client: GitHubClient, repo: string, ref = "HEAD") {
         );
         out[path] = decodeBase64Utf8(r.content);
       } catch {
-        /* missing */
+        // 取得失敗（404 等）はすべて「未配置」とみなし、結果に含めない。
       }
     }
     return out;

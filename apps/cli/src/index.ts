@@ -38,6 +38,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(e);
+  // 想定内の運用エラー（unknown profile / GitHubError 等）はスタックでなくメッセージのみ表示。
+  console.error(e instanceof Error ? e.message : e);
   process.exit(1);
 });

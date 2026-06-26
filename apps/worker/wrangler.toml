@@ -1,0 +1,27 @@
+name = "repository-fanout"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "MANIFESTS"
+id = "PLACEHOLDER_CREATE_WITH_wrangler_kv_namespace_create"
+
+[[kv_namespaces]]
+binding = "RUNS"
+id = "PLACEHOLDER_CREATE_WITH_wrangler_kv_namespace_create"
+
+[[workflows]]
+name = "fanout-parent"
+binding = "PARENT"
+class_name = "ParentWorkflow"
+
+[[workflows]]
+name = "fanout-child"
+binding = "CHILD"
+class_name = "ChildWorkflow"
+
+# Secrets (set via `wrangler secret put`):
+#   APP_ID, APP_PRIVATE_KEY            … chloe-chan App
+#   SYNC_HMAC_SECRET__<account>        … アカウント別 HMAC シークレット
+#   TEMPLATES_REPO                     … 例 "bright-room/common-files"（var でも可）

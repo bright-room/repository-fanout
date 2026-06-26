@@ -1,1 +1,15 @@
-export const VERSION = "0.0.0";
+export { createAppJwt } from "./auth/jwt.js";
+export { listInstallations, createInstallationToken } from "./auth/installation.js";
+export type { Installation } from "./auth/installation.js";
+export { GitHubClient } from "./github/client.js";
+export { GitHubError, classifyStatus, parseRetryAfter } from "./github/errors.js";
+export type { StatusClass } from "./github/errors.js";
+export { parseManifest, isNewerRevision } from "./manifest/parse.js";
+export type { Manifest, RepoEntry } from "./manifest/types.js";
+export { resolveDesiredFiles } from "./templates/resolve.js";
+export { renderRenovateExtends, renderGitignore, substituteVars } from "./templates/render.js";
+export type { TemplateSource, ProfileManifest, DesiredFile } from "./templates/types.js";
+export { computeChanges } from "./reconcile/diff.js";
+export type { FileChange } from "./reconcile/diff.js";
+export { decideBranchAction } from "./reconcile/branch.js";
+export type { BranchAction, BranchInput, PrState } from "./reconcile/branch.js";

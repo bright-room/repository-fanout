@@ -1,6 +1,6 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import {
-  GitHubClient, createAppJwt, createInstallationToken,
+  GitHubClient, GitHubError, createAppJwt, createInstallationToken,
   resolveDesiredFiles, computeChanges, decideBranchAction,
   type PrState,
 } from "@repository-fanout/core";
@@ -104,9 +104,21 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
         await step.do("reopen pr", () => retry(() => io.reopenPr(reopenNumber)));
       }
       if (createPr) {
-        const created = await step.do("create pr", () => retry(() => io.createPr({
-          branch: BRANCH, base: base.branch, title: PR_TITLE, body: PR_BODY,
-        })));
+        const created = await step.do("create pr", () =>
+          retry(async () => {
+            try {
+              return await io.createPr({ branch: BRANCH, base: base.branch, title: PR_TITLE, body: PR_BODY });
+            } catch (err) {
+              // crash-after-create のリトライで PR が既に存在する場合 (422)、
+              // 失敗扱いにせず既存 PR を解決する。
+              if (err instanceof GitHubError && err.status === 422) {
+                const existing = await io.findPr(BRANCH);
+                if (existing) return existing.number;
+              }
+              throw err;
+            }
+          }),
+        );
         prNumber = created;
         await step.do("label", () => retry(() => io.addLabels(created, PR_LABELS)));
       }

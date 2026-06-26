@@ -1,0 +1,21 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# env
+.env
+.env.local
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+# node
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*

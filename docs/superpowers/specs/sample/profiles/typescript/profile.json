@@ -1,0 +1,12 @@
+{
+  "_comment": "renovate preset・gitignore パターン・配布ファイル(files/) を1つの profile に集約した例。",
+  "renovate": ["github>bright-room/common-files//presets/typescript"],
+  "gitignore": [
+    "# node",
+    "node_modules/",
+    "dist/",
+    "*.tsbuildinfo",
+    "npm-debug.log*",
+    "pnpm-debug.log*"
+  ]
+}

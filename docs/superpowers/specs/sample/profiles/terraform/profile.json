@@ -1,0 +1,11 @@
+{
+  "renovate": ["github>bright-room/common-files//presets/terraform"],
+  "gitignore": [
+    "# terraform",
+    ".terraform/",
+    "*.tfstate",
+    "*.tfstate.*",
+    "crash.log",
+    "*.tfvars"
+  ]
+}

@@ -7,12 +7,20 @@ import {
 import { GitHubTemplateSource } from "../github/templateSource.js";
 import { RepoIO } from "../github/repoIO.js";
 import { recordRepoResult } from "../kv/runStore.js";
+import { withRetry } from "../retry.js";
 import type { Env } from "../index.js";
 
 const BRANCH = "chore/distribute-common-files";
 const PR_TITLE = "chore: distribute common files";
 const PR_BODY = "🤖 distributed by repository-fanout";
 const PR_LABELS = ["Kind: Dependencies"];
+const MAX_ATTEMPTS = 5;
+
+// Workflows step は丸ごと再実行のリトライしか提供しない。GitHub の retryable エラー
+// (429 / 403 secondary rate limit / 5xx) は Retry-After を尊重した細粒度バックオフで
+// step 内リトライする (spec §16-2)。各 step は冪等なので安全。
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const retry = <T>(fn: () => Promise<T>): Promise<T> => withRetry(fn, { maxAttempts: MAX_ATTEMPTS, sleep });
 
 export interface ChildParams {
   runId: string;
@@ -28,25 +36,27 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
   async run(event: WorkflowEvent<ChildParams>, step: WorkflowStep): Promise<void> {
     const p = event.payload;
     try {
-      const token = await step.do("mint token", async () => {
-        const jwt = await createAppJwt({ appId: this.env.APP_ID, privateKeyPem: this.env.APP_PRIVATE_KEY });
-        return (await createInstallationToken({ appJwt: jwt, installationId: p.installationId })).token;
-      });
+      const token = await step.do("mint token", async () =>
+        retry(async () => {
+          const jwt = await createAppJwt({ appId: this.env.APP_ID, privateKeyPem: this.env.APP_PRIVATE_KEY });
+          return (await createInstallationToken({ appJwt: jwt, installationId: p.installationId })).token;
+        }),
+      );
 
       const client = new GitHubClient({ token });
       const io = new RepoIO({ client, repo: p.repo });
       const templates = new GitHubTemplateSource({ client, repo: this.env.TEMPLATES_REPO });
 
       const desired = await step.do("resolve desired", async () =>
-        resolveDesiredFiles({ source: templates, profiles: p.profiles, vars: p.vars, exclude: p.exclude }),
+        retry(() => resolveDesiredFiles({ source: templates, profiles: p.profiles, vars: p.vars, exclude: p.exclude })),
       );
 
-      const base = await step.do("default branch", () => io.getDefaultBranch());
-      const actual = await step.do("read actual", () => io.readActualFiles(desired.map((d) => d.path), base.branch));
+      const base = await step.do("default branch", () => retry(() => io.getDefaultBranch()));
+      const actual = await step.do("read actual", () => retry(() => io.readActualFiles(desired.map((d) => d.path), base.branch)));
       const changes = computeChanges(desired, actual);
 
-      const pr = await step.do("find pr", () => io.findPr(BRANCH));
-      const branchExists = await step.do("branch exists", () => io.branchExists(BRANCH));
+      const pr = await step.do("find pr", () => retry(() => io.findPr(BRANCH)));
+      const branchExists = await step.do("branch exists", () => retry(() => io.branchExists(BRANCH)));
       const prState: PrState = pr ? (pr.merged ? "merged" : pr.state) : "none";
       const decision = decideBranchAction({ hasDiff: changes.length > 0, branchExists, pr: prState });
 
@@ -56,7 +66,7 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
         return;
       }
       if (decision.action === "delete-branch") {
-        await step.do("delete branch", () => io.deleteBranch(BRANCH));
+        await step.do("delete branch", () => retry(() => io.deleteBranch(BRANCH)));
         await recordRepoResult(this.env.RUNS, p.runId, { account: p.account, repo: p.repo, status: "noop" });
         return;
       }
@@ -75,28 +85,30 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
         decision.action === "recreate-branch-new-pr";
 
       if (decision.action === "recreate-branch-new-pr" && branchExists) {
-        await step.do("delete stale branch", () => io.deleteBranch(BRANCH));
+        await step.do("delete stale branch", () => retry(() => io.deleteBranch(BRANCH)));
       }
 
-      await step.do("commit", async () => {
-        const treeSha = await io.getTreeSha(base.sha);
-        await io.commitChanges({
-          branch: BRANCH, baseSha: base.sha, baseTreeSha: treeSha,
-          message: PR_TITLE, changes, create: createRef,
-        });
-      });
+      await step.do("commit", async () =>
+        retry(async () => {
+          const treeSha = await io.getTreeSha(base.sha);
+          await io.commitChanges({
+            branch: BRANCH, baseSha: base.sha, baseTreeSha: treeSha,
+            message: PR_TITLE, changes, create: createRef,
+          });
+        }),
+      );
 
       let prNumber = pr?.number;
       if (decision.action === "update-branch" && decision.reopen && prNumber !== undefined) {
         const reopenNumber = prNumber;
-        await step.do("reopen pr", () => io.reopenPr(reopenNumber));
+        await step.do("reopen pr", () => retry(() => io.reopenPr(reopenNumber)));
       }
       if (createPr) {
-        const created = await step.do("create pr", () => io.createPr({
+        const created = await step.do("create pr", () => retry(() => io.createPr({
           branch: BRANCH, base: base.branch, title: PR_TITLE, body: PR_BODY,
-        }));
+        })));
         prNumber = created;
-        await step.do("label", () => io.addLabels(created, PR_LABELS));
+        await step.do("label", () => retry(() => io.addLabels(created, PR_LABELS)));
       }
 
       await recordRepoResult(this.env.RUNS, p.runId, { account: p.account, repo: p.repo, status: "success", prNumber });

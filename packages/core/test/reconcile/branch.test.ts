@@ -26,9 +26,14 @@ test("no diff + merged PR + stale branch -> delete branch", () => {
     .toEqual({ action: "delete-branch" });
 });
 
-test("diff + nothing -> create branch and PR", () => {
+test("diff + no PR + no branch -> create branch and PR", () => {
   expect(decideBranchAction({ hasDiff: true, branchExists: false, pr: "none" }))
     .toEqual({ action: "create-branch-and-pr" });
+});
+
+test("diff + no PR + stale branch exists -> update branch then create PR", () => {
+  expect(decideBranchAction({ hasDiff: true, branchExists: true, pr: "none" }))
+    .toEqual({ action: "update-branch-and-create-pr" });
 });
 
 test("no diff + nothing -> noop", () => {

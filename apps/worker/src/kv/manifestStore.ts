@@ -7,6 +7,10 @@ export async function getManifest(kv: KVNamespace, account: string): Promise<Man
   return raw ? parseManifest(JSON.parse(raw)) : null;
 }
 
+/**
+ * NOTE: KV にはアトミックな compare-and-swap が無いため、これは read-then-write の
+ * last-writer-wins。manifest push は低頻度なので競合はほぼ起きず、許容する。
+ */
 export async function putManifestCas(
   kv: KVNamespace,
   manifest: Manifest,

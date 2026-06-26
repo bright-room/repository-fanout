@@ -58,14 +58,16 @@ export default {
       return new Response(JSON.stringify({ accepted: true, runId }), { status: 202 });
     }
 
-    // template kick: manifest なし。全アカウント reconcile。署名は共通 secret で検証
+    // template kick: manifest なし。全アカウント reconcile。共通 secret で検証。
+    // フェイルクローズ: 共通 secret 未設定なら誰でも全 fan-out を起動できてしまうため拒否する。
     const secret = secretFor(env, "_global");
-    if (secret) {
-      const ts = Number(req.headers.get("X-Fanout-Timestamp"));
-      const sig = req.headers.get("X-Fanout-Signature") ?? "";
-      const v = await verifyHmac({ secret, timestamp: ts, body, signature: sig, now, windowSec: HMAC_WINDOW_SEC });
-      if (!v.ok) return new Response("unauthorized", { status: 401 });
-    }
+    if (!secret) return new Response("global sync not configured", { status: 401 });
+
+    const ts = Number(req.headers.get("X-Fanout-Timestamp"));
+    const sig = req.headers.get("X-Fanout-Signature") ?? "";
+    const v = await verifyHmac({ secret, timestamp: ts, body, signature: sig, now, windowSec: HMAC_WINDOW_SEC });
+    if (!v.ok) return new Response(`unauthorized: ${v.reason ?? ""}`, { status: 401 });
+
     await env.PARENT.create({ params: { runId } });
     return new Response(JSON.stringify({ accepted: true, runId }), { status: 202 });
   },

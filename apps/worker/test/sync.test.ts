@@ -27,6 +27,25 @@ async function post(account: string, body: object, secret: string) {
   return res;
 }
 
+/** POST /sync (no account = global/template kick). `signWith` undefined => omit signature headers. */
+async function postGlobal(signWith: string | undefined, envObj: Record<string, unknown>) {
+  const raw = JSON.stringify({});
+  const ts = Math.floor(Date.now() / 1000);
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (signWith !== undefined) {
+    headers["X-Fanout-Timestamp"] = String(ts);
+    headers["X-Fanout-Signature"] = await signHmac(signWith, ts, raw);
+  }
+  const ctx = createExecutionContext();
+  const res = await worker.fetch(
+    new Request("https://x/sync", { method: "POST", body: raw, headers }),
+    envObj as never,
+    ctx,
+  );
+  await waitOnExecutionContext(ctx);
+  return res;
+}
+
 test("valid signed sync stores manifest and accepts", async () => {
   created.length = 0;
   const res = await post("bright-room", manifest, env["SYNC_HMAC_SECRET__bright-room"] as string);
@@ -43,4 +62,33 @@ test("bad signature is rejected 401", async () => {
 test("account without secret rejected 401", async () => {
   const res = await post("unknown-acct", manifest, "x");
   expect(res.status).toBe(401);
+});
+
+test("global sync with valid signature accepts 202", async () => {
+  created.length = 0;
+  const res = await postGlobal("globalsecret", testEnv());
+  expect(res.status).toBe(202);
+  expect(created).toHaveLength(1);
+});
+
+test("global sync without signature rejected 401", async () => {
+  created.length = 0;
+  const res = await postGlobal(undefined, testEnv());
+  expect(res.status).toBe(401);
+  expect(created).toHaveLength(0);
+});
+
+test("global sync with bad signature rejected 401", async () => {
+  const res = await postGlobal("wrongsecret", testEnv());
+  expect(res.status).toBe(401);
+});
+
+test("global sync fails closed when global secret not configured", async () => {
+  created.length = 0;
+  const noGlobal: Record<string, unknown> = { ...testEnv() };
+  delete noGlobal["SYNC_HMAC_SECRET___global"];
+  // even a 'valid' signature against some secret must be rejected when unconfigured
+  const res = await postGlobal("globalsecret", noGlobal);
+  expect(res.status).toBe(401);
+  expect(created).toHaveLength(0);
 });

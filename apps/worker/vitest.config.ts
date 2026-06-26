@@ -15,6 +15,7 @@ export default defineWorkersConfig({
           kvNamespaces: ["MANIFESTS", "RUNS"],
           bindings: {
             "SYNC_HMAC_SECRET__bright-room": "testsecret",
+            "SYNC_HMAC_SECRET___global": "globalsecret",
             APP_ID: "1",
             APP_PRIVATE_KEY: "test",
             TEMPLATES_REPO: "o/c",

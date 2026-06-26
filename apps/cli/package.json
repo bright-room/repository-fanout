@@ -1,0 +1,20 @@
+{
+  "name": "@repository-fanout/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": { "fanout": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/index.ts",
+    "dry-run": "tsx src/index.ts dry-run"
+  },
+  "dependencies": { "@repository-fanout/core": "workspace:*" },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.0",
+    "@types/node": "^22.0.0"
+  }
+}

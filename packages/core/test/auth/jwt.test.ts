@@ -20,8 +20,8 @@ test("createAppJwt produces a 3-part JWT with RS256 header and app id issuer", a
   const [h, p] = jwt.split(".");
   expect(jwt.split(".")).toHaveLength(3);
 
-  const header = JSON.parse(atob(h.replace(/-/g, "+").replace(/_/g, "/")));
-  const payload = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
+  const header = JSON.parse(atob(h!.replace(/-/g, "+").replace(/_/g, "/")));
+  const payload = JSON.parse(atob(p!.replace(/-/g, "+").replace(/_/g, "/")));
   expect(header).toEqual({ alg: "RS256", typ: "JWT" });
   expect(payload.iss).toBe("12345");
   expect(payload.iat).toBe(1_000_000 - 60); // クロックスキュー対策で60秒前倒し

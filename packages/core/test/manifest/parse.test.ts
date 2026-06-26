@@ -13,7 +13,7 @@ const valid = {
 test("parseManifest accepts a valid manifest", () => {
   const m = parseManifest(valid);
   expect(m.account).toBe("bright-room");
-  expect(m.repositories["endpoint-gate"].profiles).toEqual(["terraform"]);
+  expect(m.repositories["endpoint-gate"]!.profiles).toEqual(["terraform"]);
 });
 
 test("parseManifest rejects empty repositories", () => {
@@ -30,8 +30,8 @@ test("parseManifest defaults vars/exclude", () => {
     account: "kukv", revision: 1, sourceCommit: "x",
     repositories: { dotfiles: { profiles: [] } },
   });
-  expect(m.repositories.dotfiles.vars).toEqual({});
-  expect(m.repositories.dotfiles.exclude).toEqual([]);
+  expect(m.repositories.dotfiles!.vars).toEqual({});
+  expect(m.repositories.dotfiles!.exclude).toEqual([]);
 });
 
 test("isNewerRevision enforces monotonic CAS", () => {

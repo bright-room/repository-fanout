@@ -40,15 +40,24 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
         continue;
       }
       for (const [name, entry] of Object.entries(manifest.repositories)) {
-        await step.do(`spawn ${manifest.account}/${name}`, async () => {
-          await this.env.CHILD.create({
-            params: {
-              runId, account: manifest.account, installationId: inst.id,
-              repo: `${manifest.account}/${name}`,
-              profiles: entry.profiles, vars: entry.vars, exclude: entry.exclude,
-            },
+        // 1リポの spawn 失敗で run 全体を止めない。失敗を記録して次へ進む
+        // (missing-installation と同じグレースフル方針)。
+        try {
+          await step.do(`spawn ${manifest.account}/${name}`, async () => {
+            await this.env.CHILD.create({
+              params: {
+                runId, account: manifest.account, installationId: inst.id,
+                repo: `${manifest.account}/${name}`,
+                profiles: entry.profiles, vars: entry.vars, exclude: entry.exclude,
+              },
+            });
           });
-        });
+        } catch (err) {
+          await recordRepoResult(this.env.RUNS, runId, {
+            account: manifest.account, repo: name, status: "failed",
+            error: `spawn failed: ${String(err)}`,
+          });
+        }
         await step.sleep(`stagger ${manifest.account}/${name}`, STAGGER_MS);
       }
     }

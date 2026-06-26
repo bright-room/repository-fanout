@@ -1,3 +1,4 @@
+#!/usr/bin/env -S npx tsx
 import { GitHubClient } from "@repository-fanout/core";
 import { templateSource, actualReader } from "./github.js";
 import { planRepo } from "./planRepo.js";

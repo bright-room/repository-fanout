@@ -1,4 +1,4 @@
-import { GitHubError, parseRetryAfter } from "./errors.js";
+import { GitHubError, parseRateLimitRemaining, parseRetryAfter } from "./errors.js";
 import type { GitHubClientOptions, HttpMethod } from "./types.js";
 
 export class GitHubClient {
@@ -28,7 +28,13 @@ export class GitHubClient {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     if (res.status < 200 || res.status >= 300) {
-      throw new GitHubError(res.status, url, await res.text(), parseRetryAfter(res.headers));
+      throw new GitHubError(
+        res.status,
+        url,
+        await res.text(),
+        parseRetryAfter(res.headers),
+        parseRateLimitRemaining(res.headers),
+      );
     }
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;

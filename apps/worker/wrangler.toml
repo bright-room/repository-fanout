@@ -4,7 +4,7 @@ compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-TEMPLATES_REPO = "bright-room/common-files"
+TEMPLATES_REPO = "bright-room/canonical-files"
 
 [[kv_namespaces]]
 binding = "MANIFESTS"

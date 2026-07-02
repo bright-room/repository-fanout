@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repository-fanout/tsconfig/base.json",
   "compilerOptions": { "noEmit": true, "rootDir": ".", "types": ["node"], "lib": ["ES2022"] },
   "include": ["src", "test"]
 }

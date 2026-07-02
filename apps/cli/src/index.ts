@@ -11,7 +11,7 @@ function arg(name: string): string | undefined {
 async function main() {
   const cmd = process.argv[2];
   const repo = arg("repo");
-  const templatesRepo = arg("templates") ?? "bright-room/common-files";
+  const templatesRepo = arg("templates") ?? "bright-room/canonical-files";
   const languages = (arg("languages") ?? "").split(",").filter(Boolean);
   const codeowner = arg("codeowner") ?? repo?.split("/")[0] ?? "";
   const token = process.env.GITHUB_TOKEN;

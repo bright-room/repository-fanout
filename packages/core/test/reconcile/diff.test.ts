@@ -1,27 +1,66 @@
 import { expect, test } from "vitest";
 import { computeChanges } from "../../src/reconcile/diff.js";
-import type { DesiredFile } from "../../src/templates/types.js";
+import { BLOCK_START, BLOCK_END } from "../../src/reconcile/block.js";
+import { RenovateParseError } from "../../src/reconcile/extendsField.js";
+import type { DesiredEntry } from "../../src/templates/types.js";
 
-const desired: DesiredFile[] = [
-  { path: "renovate.json", content: "A\n", mode: "sync" },
-  { path: ".github/CODEOWNERS", content: "* @x\n", mode: "sync" },
-  { path: "STARTER.md", content: "starter\n", mode: "create-only" },
+const managed = ["github>o/rc", "github>o/rc:ts"];
+const universe = ["github>o/rc", "github>o/rc:ts", "github>o/rc:java"];
+
+const entries: DesiredEntry[] = [
+  { strategy: "replace", path: ".github/release.yml", content: "changelog: {}\n" },
+  { strategy: "create-only", path: "STARTER.md", content: "starter\n" },
+  { strategy: "managed-block", path: ".gitignore", blockContent: "a\nb" },
+  { strategy: "extends-field", path: "renovate.json", managedExtends: managed, universe, createContent: "CREATE\n" },
 ];
 
-test("sync file with different actual content -> change", () => {
-  const changes = computeChanges(desired, { "renovate.json": "OLD\n", ".github/CODEOWNERS": "* @x\n", "STARTER.md": "starter\n" });
-  expect(changes.map((c) => c.path)).toEqual(["renovate.json"]);
-  expect(changes[0]!.content).toBe("A\n");
+test("replace: differs -> change; same -> noop", () => {
+  expect(computeChanges([entries[0]!], { ".github/release.yml": "old\n" })).toHaveLength(1);
+  expect(computeChanges([entries[0]!], { ".github/release.yml": "changelog: {}\n" })).toHaveLength(0);
 });
 
-test("create-only file present -> no change; absent -> change", () => {
-  const present = computeChanges([desired[2]!], { "STARTER.md": "edited\n" });
-  expect(present).toEqual([]); // 既存なので触らない
-  const absent = computeChanges([desired[2]!], {});
-  expect(absent.map((c) => c.path)).toEqual(["STARTER.md"]);
+test("create-only: absent -> create; present (even edited) -> noop", () => {
+  expect(computeChanges([entries[1]!], {})).toHaveLength(1);
+  expect(computeChanges([entries[1]!], { "STARTER.md": "edited\n" })).toHaveLength(0);
 });
 
-test("identical content -> no-op (empty changes)", () => {
-  const changes = computeChanges(desired, { "renovate.json": "A\n", ".github/CODEOWNERS": "* @x\n", "STARTER.md": "starter\n" });
-  expect(changes).toEqual([]);
+test("managed-block: creates block-only file when absent", () => {
+  const [c] = computeChanges([entries[2]!], {});
+  expect(c!.content).toBe(`${BLOCK_START}\na\nb\n${BLOCK_END}\n`);
+});
+
+test("managed-block: updates only block, repo lines preserved; noop when identical", () => {
+  const actual = `${BLOCK_START}\nold\n${BLOCK_END}\nrepo-own\n`;
+  const [c] = computeChanges([entries[2]!], { ".gitignore": actual });
+  expect(c!.content).toBe(`${BLOCK_START}\na\nb\n${BLOCK_END}\nrepo-own\n`);
+  expect(computeChanges([entries[2]!], { ".gitignore": c!.content })).toHaveLength(0);
+});
+
+test("extends-field: absent -> createContent; managed updated + repo-own preserved; noop when equal", () => {
+  expect(computeChanges([entries[3]!], {})[0]!.content).toBe("CREATE\n");
+
+  const actual = JSON.stringify({ extends: ["github>o/rc", "github>o/rc:java", ":pre"], automerge: false }, null, 2);
+  const [c] = computeChanges([entries[3]!], { "renovate.json": actual });
+  const parsed = JSON.parse(c!.content);
+  expect(parsed.extends).toEqual(["github>o/rc", "github>o/rc:ts", ":pre"]);
+  expect(parsed.automerge).toBe(false);
+
+  expect(computeChanges([entries[3]!], { "renovate.json": c!.content })).toHaveLength(0);
+});
+
+test("extends-field: invalid json propagates RenovateParseError", () => {
+  expect(() => computeChanges([entries[3]!], { "renovate.json": "{ json5: true, }" }))
+    .toThrow(RenovateParseError);
+});
+
+test("extends-field: non-object top-level json propagates RenovateParseError", () => {
+  for (const bad of ["null", "123", '"str"', "[1,2]"]) {
+    expect(() => computeChanges([entries[3]!], { "renovate.json": bad }))
+      .toThrow(RenovateParseError);
+  }
+});
+
+test("throws (rather than silently no-op) on an unknown strategy", () => {
+  const bogus = { strategy: "bogus", path: "x", content: "y" } as unknown as DesiredEntry;
+  expect(() => computeChanges([bogus], {})).toThrow(/strategy/i);
 });

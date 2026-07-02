@@ -9,10 +9,13 @@ const source: TemplateSource = {
   async listFiles(prefix) {
     return prefix === "base/files/" ? ["base/files/renovate.json"] : [];
   },
-  async readProfileManifest(dir) {
-    return dir === "base" ? { renovate: ["github>o/c//presets/default"] } : null;
+  async readFragmentManifest(dir) {
+    return dir === "base" ? { renovate: ["github>o/renovate-config"] } : null;
   },
-  async profileExists() {
+  async listLanguages() {
+    return [];
+  },
+  async languageExists() {
     return true;
   },
 };
@@ -20,22 +23,38 @@ const source: TemplateSource = {
 test("planRepo reports changes vs actual", async () => {
   const plan = await planRepo({
     source,
-    profiles: [],
+    languages: [],
     vars: {},
     exclude: [],
     readActual: async () => ({}), // 何も無い → 追加
   });
   expect(plan.changes.map((c) => c.path)).toEqual(["renovate.json"]);
-  expect(plan.changes[0]?.content).toBe('{"extends":["github>o/c//presets/default"]}');
+  expect(plan.changes[0]?.content).toBe('{"extends":["github>o/renovate-config"]}');
 });
 
 test("planRepo no-op when actual matches", async () => {
   const plan = await planRepo({
     source,
-    profiles: [],
+    languages: [],
     vars: {},
     exclude: [],
-    readActual: async () => ({ "renovate.json": '{"extends":["github>o/c//presets/default"]}' }),
+    readActual: async () => ({ "renovate.json": '{"extends":["github>o/renovate-config"]}' }),
   });
   expect(plan.changes).toEqual([]);
+});
+
+test("planRepo merges managed block with existing repo content", async () => {
+  const src: TemplateSource = {
+    async readFile(p) { return p === "base/files/.gitignore" ? "{{gitignore}}\n" : null; },
+    async listFiles(prefix) { return prefix === "base/files/" ? ["base/files/.gitignore"] : []; },
+    async readFragmentManifest(dir) { return dir === "base" ? { gitignore: ["a"] } : null; },
+    async listLanguages() { return []; },
+    async languageExists() { return true; },
+  };
+  const plan = await planRepo({
+    source: src, languages: [], vars: {}, exclude: [],
+    readActual: async () => ({ ".gitignore": "repo-own\n" }),
+  });
+  expect(plan.changes[0]!.content).toContain("repo-own");
+  expect(plan.changes[0]!.content).toContain("# >>> repository-fanout managed >>>");
 });

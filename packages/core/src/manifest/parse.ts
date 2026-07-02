@@ -19,8 +19,8 @@ export function parseManifest(input: unknown): Manifest {
     if (typeof r !== "object" || r === null) throw new Error(`manifest: ${name} must be an object`);
     const entry = r as Record<string, unknown>;
 
-    if (!Array.isArray(entry.profiles) || !entry.profiles.every((p) => typeof p === "string")) {
-      throw new Error(`manifest: ${name}.profiles must be an array of strings`);
+    if (!Array.isArray(entry.languages) || !entry.languages.every((l) => typeof l === "string")) {
+      throw new Error(`manifest: ${name}.languages must be an array of strings`);
     }
 
     let exclude: string[] = [];
@@ -42,7 +42,7 @@ export function parseManifest(input: unknown): Manifest {
       vars = entry.vars as Record<string, string>;
     }
 
-    repositories[name] = { profiles: entry.profiles as string[], vars, exclude };
+    repositories[name] = { languages: entry.languages as string[], vars, exclude };
   }
   return { account: o.account, revision: o.revision, sourceCommit: o.sourceCommit, repositories };
 }

@@ -1,4 +1,4 @@
-import { GitHubClient, type ProfileManifest, type TemplateSource } from "@repository-fanout/core";
+import { GitHubClient, type FragmentManifest, type TemplateSource } from "@repository-fanout/core";
 
 /**
  * GitHub Contents API は base64(UTF-8 bytes) を改行入りで返す。
@@ -39,12 +39,20 @@ export function templateSource(client: GitHubClient, repo: string): TemplateSour
     async listFiles(prefix) {
       return (await tree()).filter((p) => p.startsWith(prefix));
     },
-    async readProfileManifest(dir) {
-      const raw = await read(`${dir}/profile.json`);
-      return raw ? (JSON.parse(raw) as ProfileManifest) : null;
+    async readFragmentManifest(dir) {
+      const raw = await read(`${dir}/fragment.json`);
+      return raw ? (JSON.parse(raw) as FragmentManifest) : null;
     },
-    async profileExists(tag) {
-      return (await tree()).some((p) => p.startsWith(`profiles/${tag}/`));
+    async listLanguages() {
+      const langs = new Set<string>();
+      for (const p of await tree()) {
+        const m = /^languages\/([^/]+)\//.exec(p);
+        if (m) langs.add(m[1]!);
+      }
+      return [...langs];
+    },
+    async languageExists(lang) {
+      return (await tree()).some((p) => p.startsWith(`languages/${lang}/`));
     },
   };
 }

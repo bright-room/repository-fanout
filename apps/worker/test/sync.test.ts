@@ -6,7 +6,7 @@ import { getManifest } from "../src/kv/manifestStore.js";
 
 const manifest = {
   account: "bright-room", revision: 1, sourceCommit: "c",
-  repositories: { r1: { profiles: [], vars: {}, exclude: [] } },
+  repositories: { r1: { languages: [], vars: {}, exclude: [] } },
 };
 
 // vitest-pool-workers can't bind Workflows, so stub PARENT/CHILD on the env.

@@ -1,5 +1,5 @@
 import {
-  resolveDesiredFiles,
+  resolveDesiredEntries,
   computeChanges,
   type TemplateSource,
   type FileChange,
@@ -7,16 +7,16 @@ import {
 
 export interface PlanArgs {
   source: TemplateSource;
-  profiles: string[];
+  languages: string[];
   vars: Record<string, string>;
   exclude: string[];
   readActual: (paths: string[]) => Promise<Record<string, string>>;
 }
 
 export async function planRepo(args: PlanArgs): Promise<{ changes: FileChange[] }> {
-  const desired = await resolveDesiredFiles({
+  const desired = await resolveDesiredEntries({
     source: args.source,
-    profiles: args.profiles,
+    languages: args.languages,
     vars: args.vars,
     exclude: args.exclude,
   });

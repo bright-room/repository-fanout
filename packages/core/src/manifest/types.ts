@@ -1,5 +1,5 @@
 export interface RepoEntry {
-  profiles: string[];
+  languages: string[];
   vars: Record<string, string>;
   /** fanout が触らないパス（CODEOWNERS opt-out 等。spec §3） */
   exclude: string[];

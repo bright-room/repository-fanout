@@ -10,8 +10,12 @@ export function renderGitignore(contributions: GitignoreSection[][]): string {
   const seen = new Set<string>();
   const blocks: string[] = [];
   for (const section of contributions.flat()) {
-    const fresh = section.ignores.filter((ig) => !seen.has(ig));
-    for (const ig of fresh) seen.add(ig);
+    const fresh: string[] = [];
+    for (const ig of section.ignores) {
+      if (seen.has(ig)) continue;
+      seen.add(ig);
+      fresh.push(ig);
+    }
     if (fresh.length === 0) continue;
     const lines = section.section_comment ? [`# ${section.section_comment}`, ...fresh] : fresh;
     blocks.push(lines.join("\n"));

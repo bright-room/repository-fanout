@@ -18,6 +18,11 @@ test("renderGitignore dedups ignore entries across sections and drops sections l
   expect(out).toBe("# OS\n.DS_Store\n\n# node\nnode_modules/");
 });
 
+test("renderGitignore dedups duplicate entries within a single section", () => {
+  const out = renderGitignore([[{ section_comment: "OS", ignores: [".DS_Store", ".DS_Store"] }]]);
+  expect(out).toBe("# OS\n.DS_Store");
+});
+
 test("renderGitignore renders a section without a comment as bare ignores", () => {
   const out = renderGitignore([[{ ignores: ["a", "b"] }]]);
   expect(out).toBe("a\nb");

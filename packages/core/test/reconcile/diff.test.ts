@@ -59,3 +59,8 @@ test("extends-field: non-object top-level json propagates RenovateParseError", (
       .toThrow(RenovateParseError);
   }
 });
+
+test("throws (rather than silently no-op) on an unknown strategy", () => {
+  const bogus = { strategy: "bogus", path: "x", content: "y" } as unknown as DesiredEntry;
+  expect(() => computeChanges([bogus], {})).toThrow(/strategy/i);
+});

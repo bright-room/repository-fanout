@@ -40,6 +40,11 @@ export function computeChanges(
         if (next !== null) changes.push({ path: d.path, content: next });
         break;
       }
+      default: {
+        // 5 番目の戦略を追加したらここがコンパイルエラーになる（silent no-op を防ぐ）。
+        const _exhaustive: never = d;
+        throw new Error(`unknown desired entry strategy: ${JSON.stringify(_exhaustive)}`);
+      }
     }
   }
   return changes;

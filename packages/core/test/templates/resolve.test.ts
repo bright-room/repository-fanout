@@ -1,79 +1,88 @@
 import { expect, test } from "vitest";
-import { resolveDesiredFiles } from "../../src/templates/resolve.js";
-import type { TemplateSource, ProfileManifest } from "../../src/templates/types.js";
+import { resolveDesiredEntries } from "../../src/templates/resolve.js";
+import type { TemplateSource, FragmentManifest } from "../../src/templates/types.js";
 
 function memorySource(opts: {
-  files: Record<string, string>;        // フルパス -> 内容（base/files/**, profiles/<t>/files/**, seeds/**）
-  profileManifests: Record<string, ProfileManifest>; // "base" | "profiles/<tag>" -> manifest
-  profiles: string[];                   // 存在する profile タグ
+  files: Record<string, string>;
+  fragments: Record<string, FragmentManifest>; // "base" | "languages/<lang>"
+  languages: string[];                          // 存在する language 一覧
 }): TemplateSource {
   return {
-    async readFile(path) { return opts.files[path] ?? null; },
+    async readFile(p) { return opts.files[p] ?? null; },
     async listFiles(prefix) { return Object.keys(opts.files).filter((p) => p.startsWith(prefix)); },
-    async readProfileManifest(dir) { return opts.profileManifests[dir] ?? null; },
-    async profileExists(tag) { return opts.profiles.includes(tag); },
+    async readFragmentManifest(dir) { return opts.fragments[dir] ?? null; },
+    async listLanguages() { return opts.languages; },
+    async languageExists(lang) { return opts.languages.includes(lang); },
   };
 }
 
-const baseSource = () => memorySource({
+const source = () => memorySource({
   files: {
-    "base/files/renovate.json": '{\n  "extends": [{{renovate_extends}}]\n}\n',
+    "base/files/renovate.json": '{\n  "$schema": "s",\n  "extends": [{{renovate_extends}}]\n}\n',
     "base/files/.gitignore": "{{gitignore}}\n",
     "base/files/.github/CODEOWNERS": "* @{{codeowner}}\n",
+    "base/files/.github/release.yml": "changelog: {}\n",
     "seeds/STARTER.md": "starter\n",
-    "profiles/typescript/files/.editorconfig": "root = true\n",
+    "languages/typescript/files/.editorconfig": "root = true\n",
   },
-  profileManifests: {
-    base: { renovate: ["github>o/c//presets/default"], gitignore: ["# base", ".DS_Store"] },
-    "profiles/terraform": { renovate: ["github>o/c//presets/terraform"], gitignore: ["# tf", "*.tfstate"] },
-    "profiles/typescript": { renovate: ["github>o/c//presets/typescript"], gitignore: ["# node", "node_modules/"] },
+  fragments: {
+    base: { renovate: ["github>o/renovate-config"], gitignore: ["# base", ".DS_Store"] },
+    "languages/terraform": { renovate: ["github>o/renovate-config:terraform"], gitignore: ["# tf", "*.tfstate"] },
+    "languages/typescript": { renovate: ["github>o/renovate-config:typescript"], gitignore: ["# node", "node_modules/"] },
+    "languages/java": { renovate: ["github>o/renovate-config:java"] },
   },
-  profiles: ["terraform", "typescript", "java"],
+  languages: ["terraform", "typescript", "java"],
 });
 
-test("base-only repo gets base files with composed + vars rendered", async () => {
-  const files = await resolveDesiredFiles({
-    source: baseSource(), profiles: [], vars: { codeowner: "kukv" }, exclude: [],
+test("strategies are assigned per path via registry", async () => {
+  const entries = await resolveDesiredEntries({ source: source(), languages: [], vars: { codeowner: "kukv" }, exclude: [] });
+  const byPath = Object.fromEntries(entries.map((e) => [e.path, e]));
+  expect(byPath["renovate.json"]!.strategy).toBe("extends-field");
+  expect(byPath[".gitignore"]!.strategy).toBe("managed-block");
+  expect(byPath[".github/CODEOWNERS"]!.strategy).toBe("managed-block");
+  expect(byPath[".github/release.yml"]!.strategy).toBe("replace");
+  expect(byPath["STARTER.md"]!.strategy).toBe("create-only");
+});
+
+test("extends-field entry carries managed (declared) and universe (all languages)", async () => {
+  const entries = await resolveDesiredEntries({ source: source(), languages: ["typescript"], vars: {}, exclude: [] });
+  const r = entries.find((e) => e.path === "renovate.json")!;
+  if (r.strategy !== "extends-field") throw new Error("wrong strategy");
+  expect(r.managedExtends).toEqual(["github>o/renovate-config", "github>o/renovate-config:typescript"]);
+  expect(r.universe).toEqual([
+    "github>o/renovate-config",
+    "github>o/renovate-config:terraform",
+    "github>o/renovate-config:typescript",
+    "github>o/renovate-config:java",
+  ]);
+  expect(r.createContent).toBe('{\n  "$schema": "s",\n  "extends": ["github>o/renovate-config", "github>o/renovate-config:typescript"]\n}\n');
+});
+
+test("managed-block entries compose block content (vars + language lines)", async () => {
+  const entries = await resolveDesiredEntries({ source: source(), languages: ["terraform"], vars: { codeowner: "o/team" }, exclude: [] });
+  const gi = entries.find((e) => e.path === ".gitignore")!;
+  if (gi.strategy !== "managed-block") throw new Error("wrong strategy");
+  expect(gi.blockContent).toBe("# base\n.DS_Store\n# tf\n*.tfstate");
+  const co = entries.find((e) => e.path === ".github/CODEOWNERS")!;
+  if (co.strategy !== "managed-block") throw new Error("wrong strategy");
+  expect(co.blockContent).toBe("* @o/team");
+});
+
+test("language files are included; unknown language throws; collision throws; exclude removes", async () => {
+  const withTs = await resolveDesiredEntries({ source: source(), languages: ["typescript"], vars: {}, exclude: [] });
+  expect(withTs.find((e) => e.path === ".editorconfig")?.strategy).toBe("replace");
+
+  await expect(resolveDesiredEntries({ source: source(), languages: ["typoscript"], vars: {}, exclude: [] }))
+    .rejects.toThrow(/unknown language/i);
+
+  const collide = memorySource({
+    files: { "languages/a/files/x.txt": "a", "languages/b/files/x.txt": "b" },
+    fragments: {},
+    languages: ["a", "b"],
   });
-  const byPath = Object.fromEntries(files.map((f) => [f.path, f]));
-  expect(byPath["renovate.json"]!.content).toBe('{\n  "extends": ["github>o/c//presets/default"]\n}\n');
-  expect(byPath[".gitignore"]!.content).toBe("# base\n.DS_Store\n");
-  expect(byPath[".github/CODEOWNERS"]!.content).toBe("* @kukv\n");
-  expect(byPath["STARTER.md"]!.mode).toBe("create-only");
-  expect(byPath["renovate.json"]!.mode).toBe("sync");
-});
-
-test("terraform profile adds preset + gitignore lines and its files", async () => {
-  const files = await resolveDesiredFiles({
-    source: baseSource(), profiles: ["terraform"], vars: { codeowner: "o/t" }, exclude: [],
-  });
-  const byPath = Object.fromEntries(files.map((f) => [f.path, f]));
-  expect(byPath["renovate.json"]!.content).toContain('"github>o/c//presets/terraform"');
-  expect(byPath[".gitignore"]!.content).toBe("# base\n.DS_Store\n# tf\n*.tfstate\n");
-});
-
-test("unknown profile throws", async () => {
-  await expect(resolveDesiredFiles({
-    source: baseSource(), profiles: ["typoscript"], vars: {}, exclude: [],
-  })).rejects.toThrow(/unknown profile/i);
-});
-
-test("path collision between profiles throws", async () => {
-  const src = memorySource({
-    files: {
-      "profiles/a/files/x.txt": "a",
-      "profiles/b/files/x.txt": "b",
-    },
-    profileManifests: {},
-    profiles: ["a", "b"],
-  });
-  await expect(resolveDesiredFiles({ source: src, profiles: ["a", "b"], vars: {}, exclude: [] }))
+  await expect(resolveDesiredEntries({ source: collide, languages: ["a", "b"], vars: {}, exclude: [] }))
     .rejects.toThrow(/collision/i);
-});
 
-test("exclude removes a path from desired set", async () => {
-  const files = await resolveDesiredFiles({
-    source: baseSource(), profiles: [], vars: { codeowner: "kukv" }, exclude: [".github/CODEOWNERS"],
-  });
-  expect(files.find((f) => f.path === ".github/CODEOWNERS")).toBeUndefined();
+  const excluded = await resolveDesiredEntries({ source: source(), languages: [], vars: { codeowner: "x" }, exclude: [".github/CODEOWNERS"] });
+  expect(excluded.find((e) => e.path === ".github/CODEOWNERS")).toBeUndefined();
 });

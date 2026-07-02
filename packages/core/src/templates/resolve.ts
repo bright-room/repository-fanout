@@ -1,60 +1,67 @@
-import { renderGitignore, renderRenovateExtends, substituteVars } from "./render.js";
-import type { DesiredFile, ProfileManifest, TemplateSource } from "./types.js";
+import { renderGitignore, substituteVars } from "./render.js";
+import type { DesiredEntry, FragmentManifest, TemplateSource } from "./types.js";
 
 export interface ResolveArgs {
   source: TemplateSource;
-  profiles: string[];
+  languages: string[];
   vars: Record<string, string>;
   exclude: string[];
 }
 
-const COMPOSED: Record<string, "renovate_extends" | "gitignore"> = {
-  "base/files/renovate.json": "renovate_extends",
-  "base/files/.gitignore": "gitignore",
+/** パス → 特殊戦略。未登録の base/languages files は replace、seeds は create-only */
+const STRATEGY_REGISTRY: Record<string, "extends-field" | "managed-block"> = {
+  "renovate.json": "extends-field",
+  ".gitignore": "managed-block",
+  ".github/CODEOWNERS": "managed-block",
 };
 
-/** "base/files/foo" -> "foo", "profiles/x/files/foo" -> "foo", "seeds/foo" -> "foo" */
 function destPath(fullPath: string): string {
   return fullPath
     .replace(/^base\/files\//, "")
-    .replace(/^profiles\/[^/]+\/files\//, "")
+    .replace(/^languages\/[^/]+\/files\//, "")
     .replace(/^seeds\//, "");
 }
 
-export async function resolveDesiredFiles(args: ResolveArgs): Promise<DesiredFile[]> {
+function dedupePreserveOrder(items: string[]): string[] {
+  const seen = new Set<string>();
+  return items.filter((i) => (seen.has(i) ? false : (seen.add(i), true)));
+}
+
+export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredEntry[]> {
   const { source } = args;
 
-  // 1. 未知 profile はエラー
-  for (const tag of args.profiles) {
-    if (!(await source.profileExists(tag))) throw new Error(`unknown profile: ${tag}`);
+  // 1. 未知 language はエラー
+  for (const lang of args.languages) {
+    if (!(await source.languageExists(lang))) throw new Error(`unknown language: ${lang}`);
   }
 
-  // 2. composed 貢献を集める（base が先頭、宣言順）
-  const profileManifests: ProfileManifest[] = [];
-  const baseManifest = await source.readProfileManifest("base");
-  if (baseManifest) profileManifests.push(baseManifest);
-  for (const tag of args.profiles) {
-    const pm = await source.readProfileManifest(`profiles/${tag}`);
-    if (pm) profileManifests.push(pm);
+  // 2. fragment 収集：宣言分（base→宣言順）と全 language（universe 用）
+  const baseFragment = (await source.readFragmentManifest("base")) ?? {};
+  const declared: FragmentManifest[] = [baseFragment];
+  for (const lang of args.languages) {
+    declared.push((await source.readFragmentManifest(`languages/${lang}`)) ?? {});
   }
-  const renovateExtends = renderRenovateExtends(profileManifests.map((p) => p.renovate ?? []));
-  const gitignore = renderGitignore(profileManifests.map((p) => p.gitignore ?? []));
-  const composedValues: Record<"renovate_extends" | "gitignore", string> = {
-    renovate_extends: renovateExtends,
-    gitignore,
-  };
+  const allLangs = await source.listLanguages();
+  const all: FragmentManifest[] = [baseFragment];
+  for (const lang of allLangs) {
+    all.push((await source.readFragmentManifest(`languages/${lang}`)) ?? {});
+  }
 
-  // 3. ファイルを集める（base/files, seeds, profiles/<tag>/files）。衝突検出。
-  const sources: Array<{ prefix: string; mode: DesiredFile["mode"] }> = [
-    { prefix: "base/files/", mode: "sync" },
-    { prefix: "seeds/", mode: "create-only" },
-    ...args.profiles.map((t) => ({ prefix: `profiles/${t}/files/`, mode: "sync" as const })),
+  const managedExtends = dedupePreserveOrder(declared.flatMap((f) => f.renovate ?? []));
+  const universe = dedupePreserveOrder(all.flatMap((f) => f.renovate ?? []));
+  const gitignoreBlock = renderGitignore(declared.map((f) => f.gitignore ?? []));
+
+  // 3. ファイル収集（衝突検出）
+  const groups: Array<{ prefix: string; seeds: boolean }> = [
+    { prefix: "base/files/", seeds: false },
+    { prefix: "seeds/", seeds: true },
+    ...args.languages.map((l) => ({ prefix: `languages/${l}/files/`, seeds: false })),
   ];
 
-  const byDest = new Map<string, DesiredFile>();
-  const owner = new Map<string, string>(); // dest -> 提供元 prefix（衝突メッセージ用）
+  const byDest = new Map<string, DesiredEntry>();
+  const owner = new Map<string, string>();
 
-  for (const { prefix, mode } of sources) {
+  for (const { prefix, seeds } of groups) {
     for (const full of await source.listFiles(prefix)) {
       const dest = destPath(full);
       if (byDest.has(dest)) {
@@ -63,19 +70,28 @@ export async function resolveDesiredFiles(args: ResolveArgs): Promise<DesiredFil
       const raw = await source.readFile(full);
       if (raw === null) continue;
 
-      // composed 描画 → そうでなければ {{var}} 置換
-      const composedKind = COMPOSED[full];
-      const content = composedKind
-        ? substituteVars(raw.replace(`{{${composedKind}}}`, composedValues[composedKind]), args.vars)
-        : substituteVars(raw, args.vars);
-
-      byDest.set(dest, { path: dest, content, mode });
+      let entry: DesiredEntry;
+      const special = seeds ? undefined : STRATEGY_REGISTRY[dest];
+      if (special === "extends-field") {
+        const createContent = substituteVars(
+          raw.replace("{{renovate_extends}}", managedExtends.map((e) => JSON.stringify(e)).join(", ")),
+          args.vars,
+        );
+        entry = { strategy: "extends-field", path: dest, managedExtends, universe, createContent };
+      } else if (special === "managed-block") {
+        const rendered = substituteVars(raw.replace("{{gitignore}}", gitignoreBlock), args.vars);
+        entry = { strategy: "managed-block", path: dest, blockContent: rendered.replace(/\n$/, "") };
+      } else {
+        const content = substituteVars(raw, args.vars);
+        entry = seeds
+          ? { strategy: "create-only", path: dest, content }
+          : { strategy: "replace", path: dest, content };
+      }
+      byDest.set(dest, entry);
       owner.set(dest, prefix);
     }
   }
 
-  // 4. exclude 適用
   for (const ex of args.exclude) byDest.delete(ex);
-
   return [...byDest.values()];
 }

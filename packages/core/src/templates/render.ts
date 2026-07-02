@@ -7,12 +7,6 @@ function dedupePreserveOrder(items: string[]): string[] {
   return out;
 }
 
-/** renovate.json の {{renovate_extends}} に入れる「JSON 配列の中身」を作る */
-export function renderRenovateExtends(contributions: string[][]): string {
-  const merged = dedupePreserveOrder(contributions.flat());
-  return merged.map((e) => JSON.stringify(e)).join(", ");
-}
-
 /** .gitignore の {{gitignore}} に入れる改行区切りテキストを作る */
 export function renderGitignore(contributions: string[][]): string {
   return dedupePreserveOrder(contributions.flat()).join("\n");

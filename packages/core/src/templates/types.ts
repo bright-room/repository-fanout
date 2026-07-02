@@ -1,26 +1,35 @@
-/** profile ディレクトリの profile.json */
-export interface ProfileManifest {
-  /** renovate extends エントリ（相対 or 組み込み preset） */
+/** base/ または languages/<lang>/ の fragment.json */
+export interface FragmentManifest {
+  /** renovate extends エントリ（renovate-config 参照 or 組み込み preset） */
   renovate?: string[];
-  /** .gitignore に足す行 */
+  /** .gitignore の managed-block に足す行 */
   gitignore?: string[];
 }
 
-/** テンプレ専用リポからの読み取りを抽象化（worker は GitHub 経由、test はメモリ） */
+/** テンプレ専用リポからの読み取りを抽象化（worker/cli は GitHub 経由、test はメモリ） */
 export interface TemplateSource {
-  /** 例 "base/files/renovate.json" の生バイト列（無ければ null） */
   readFile(path: string): Promise<string | null>;
-  /** 指定 prefix 配下のファイルパス一覧（例 "base/files/"） */
   listFiles(prefix: string): Promise<string[]>;
-  /** profile.json を読む（base または profiles/<tag>）。存在しなければ null */
-  readProfileManifest(profileDir: string): Promise<ProfileManifest | null>;
-  /** profiles/<tag> ディレクトリが存在するか（未知 profile 検出用） */
-  profileExists(tag: string): Promise<boolean>;
+  /** `${dir}/fragment.json` を読む（"base" | "languages/<lang>"）。無ければ null */
+  readFragmentManifest(dir: string): Promise<FragmentManifest | null>;
+  /** languages/ 直下のディレクトリ名一覧（universe 計算用） */
+  listLanguages(): Promise<string[]>;
+  /** languages/<lang>/ が存在するか（未知 language 検出用） */
+  languageExists(lang: string): Promise<boolean>;
 }
 
-/** reconcile が出力する「望ましいファイル」 */
-export interface DesiredFile {
-  path: string;
-  content: string;
-  mode: "sync" | "create-only";
-}
+/** resolve の出力。戦略ごとに必要な情報を持つ（actual とのマージは computeChanges が行う） */
+export type DesiredEntry =
+  | { strategy: "replace"; path: string; content: string }
+  | { strategy: "create-only"; path: string; content: string }
+  | { strategy: "managed-block"; path: string; blockContent: string }
+  | {
+      strategy: "extends-field";
+      path: string;
+      /** 宣言 languages から導出した管理 extends（正準順） */
+      managedExtends: string[];
+      /** base∪全 language の貢献（管理対象判定用） */
+      universe: string[];
+      /** ファイル不在時に新規作成する全文 */
+      createContent: string;
+    };

@@ -1,15 +1,5 @@
 import { expect, test } from "vitest";
-import { renderRenovateExtends, renderGitignore, substituteVars } from "../../src/templates/render.js";
-
-test("renderRenovateExtends concatenates base + profiles, dedups, preserves order", () => {
-  const out = renderRenovateExtends([
-    ["github>o/c//presets/default"],
-    [],                          // java: 何も足さない
-    ["group:springBoot"],
-    ["github>o/c//presets/default"], // 重複
-  ]);
-  expect(out).toBe('"github>o/c//presets/default", "group:springBoot"');
-});
+import { renderGitignore, substituteVars } from "../../src/templates/render.js";
 
 test("renderGitignore joins lines with newline and dedups exact lines", () => {
   const out = renderGitignore([

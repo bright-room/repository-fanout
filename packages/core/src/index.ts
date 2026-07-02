@@ -6,10 +6,12 @@ export { GitHubError, classifyStatus, parseRetryAfter, parseRateLimitRemaining }
 export type { StatusClass, ClassifyOptions } from "./github/errors.js";
 export { parseManifest, isNewerRevision } from "./manifest/parse.js";
 export type { Manifest, RepoEntry } from "./manifest/types.js";
-export { resolveDesiredFiles } from "./templates/resolve.js";
-export { renderRenovateExtends, renderGitignore, substituteVars } from "./templates/render.js";
-export type { TemplateSource, ProfileManifest, DesiredFile } from "./templates/types.js";
+export { resolveDesiredEntries } from "./templates/resolve.js";
+export { renderGitignore, substituteVars } from "./templates/render.js";
+export type { TemplateSource, FragmentManifest, DesiredEntry } from "./templates/types.js";
 export { computeChanges } from "./reconcile/diff.js";
 export type { FileChange } from "./reconcile/diff.js";
+export { applyManagedBlock, BLOCK_START, BLOCK_END } from "./reconcile/block.js";
+export { mergeExtends, applyExtendsField, RenovateParseError } from "./reconcile/extendsField.js";
 export { decideBranchAction } from "./reconcile/branch.js";
 export type { BranchAction, BranchInput, PrState } from "./reconcile/branch.js";

@@ -27,6 +27,19 @@ test("templateSource.readFile decodes multibyte UTF-8 content (no atob corruptio
   expect(await src.readFile("base/files/missing.md")).toBeNull();
 });
 
+test("templateSource.readFragmentManifest reads languages/<lang>/fragment.json", async () => {
+  const client = new GitHubClient({
+    token: "x",
+    fetchImpl: fakeContentsFetch({
+      "languages/terraform/fragment.json": '{"renovate":["github>o/renovate-config:terraform"]}',
+    }),
+  });
+  const src = templateSource(client, "o/c");
+  const fm = await src.readFragmentManifest("languages/terraform");
+  expect(fm?.renovate).toEqual(["github>o/renovate-config:terraform"]);
+  expect(await src.readFragmentManifest("languages/missing")).toBeNull();
+});
+
 test("actualReader decodes UTF-8 and omits missing paths", async () => {
   const client = new GitHubClient({
     token: "x",

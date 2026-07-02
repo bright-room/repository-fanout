@@ -23,10 +23,32 @@ function pkcs1ToPkcs8(pkcs1: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> {
   const len = pkcs1.length;
   const inner = 22 + len; // version(3) + algId(15) + octetString header(4) + key
   const prefix = new Uint8Array([
-    0x30, 0x82, (inner >> 8) & 0xff, inner & 0xff, // SEQUENCE (PrivateKeyInfo)
-    0x02, 0x01, 0x00,                              // INTEGER version = 0
-    0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00, // AlgId rsaEncryption + NULL
-    0x04, 0x82, (len >> 8) & 0xff, len & 0xff,     // OCTET STRING (privateKey)
+    0x30,
+    0x82,
+    (inner >> 8) & 0xff,
+    inner & 0xff, // SEQUENCE (PrivateKeyInfo)
+    0x02,
+    0x01,
+    0x00, // INTEGER version = 0
+    0x30,
+    0x0d,
+    0x06,
+    0x09,
+    0x2a,
+    0x86,
+    0x48,
+    0x86,
+    0xf7,
+    0x0d,
+    0x01,
+    0x01,
+    0x01,
+    0x05,
+    0x00, // AlgId rsaEncryption + NULL
+    0x04,
+    0x82,
+    (len >> 8) & 0xff,
+    len & 0xff, // OCTET STRING (privateKey)
   ]);
   const out = new Uint8Array(prefix.length + len);
   out.set(prefix, 0);

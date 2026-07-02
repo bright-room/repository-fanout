@@ -8,9 +8,15 @@ export interface RepoResult {
 
 const k = (runId: string, account: string, repo: string) => `run:${runId}:${account}:${repo}`;
 
-export async function recordRepoResult(kv: KVNamespace, runId: string, r: RepoResult): Promise<void> {
+export async function recordRepoResult(
+  kv: KVNamespace,
+  runId: string,
+  r: RepoResult,
+): Promise<void> {
   // 90日 TTL
-  await kv.put(k(runId, r.account, r.repo), JSON.stringify(r), { expirationTtl: 60 * 60 * 24 * 90 });
+  await kv.put(k(runId, r.account, r.repo), JSON.stringify(r), {
+    expirationTtl: 60 * 60 * 24 * 90,
+  });
 }
 
 export async function getRun(kv: KVNamespace, runId: string): Promise<RepoResult[]> {

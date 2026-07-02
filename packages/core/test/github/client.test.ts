@@ -1,6 +1,5 @@
 import { expect, test, vi } from "vitest";
 import { GitHubClient } from "../../src/github/client.js";
-import { GitHubError } from "../../src/github/errors.js";
 
 function fakeFetch(handler: (url: string, init?: RequestInit) => Response) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
@@ -20,8 +19,8 @@ test("request sends auth header and returns parsed json", async () => {
 });
 
 test("request throws GitHubError with retryAfter on 429", async () => {
-  const fetchImpl = fakeFetch(() =>
-    new Response("rate limited", { status: 429, headers: { "retry-after": "12" } }),
+  const fetchImpl = fakeFetch(
+    () => new Response("rate limited", { status: 429, headers: { "retry-after": "12" } }),
   );
   const gh = new GitHubClient({ token: "tok", fetchImpl });
   await expect(gh.request("GET", "/x")).rejects.toMatchObject({

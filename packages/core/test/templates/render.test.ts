@@ -24,7 +24,8 @@ test("renderGitignore renders a section without a comment as bare ignores", () =
 });
 
 test("substituteVars replaces {{key}} and leaves unknown placeholders intact", () => {
-  expect(substituteVars("* @{{codeowner}}", { codeowner: "bright-room/br-maintainers" }))
-    .toBe("* @bright-room/br-maintainers");
+  expect(substituteVars("* @{{codeowner}}", { codeowner: "bright-room/br-maintainers" })).toBe(
+    "* @bright-room/br-maintainers",
+  );
   expect(substituteVars("a {{missing}} b", {})).toBe("a {{missing}} b");
 });

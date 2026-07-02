@@ -1,14 +1,14 @@
 import { expect, test } from "vitest";
-import { applyManagedBlock, BLOCK_START, BLOCK_END } from "../../src/reconcile/block.js";
+import { applyManagedBlock, BLOCK_END, BLOCK_START } from "../../src/reconcile/block.js";
 
 const block = (inner: string) => `${BLOCK_START}\n${inner}\n${BLOCK_END}`;
 
 test("creates block-only file when actual is absent", () => {
-  expect(applyManagedBlock(undefined, "a\nb")).toBe(block("a\nb") + "\n");
+  expect(applyManagedBlock(undefined, "a\nb")).toBe(`${block("a\nb")}\n`);
 });
 
 test("prepends block when actual has no markers, preserving existing content", () => {
-  expect(applyManagedBlock("repo1\nrepo2\n", "a")).toBe(block("a") + "\nrepo1\nrepo2\n");
+  expect(applyManagedBlock("repo1\nrepo2\n", "a")).toBe(`${block("a")}\nrepo1\nrepo2\n`);
 });
 
 test("replaces only the marked region, preserving before/after", () => {

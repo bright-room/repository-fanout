@@ -1,6 +1,6 @@
+import { GitHubClient } from "@repository-fanout/core";
 import { expect, test, vi } from "vitest";
 import { GitHubTemplateSource } from "../../src/github/templateSource.js";
-import { GitHubClient } from "@repository-fanout/core";
 
 function clientReturning(map: Record<string, unknown>): GitHubClient {
   const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {
@@ -15,15 +15,18 @@ function clientReturning(map: Record<string, unknown>): GitHubClient {
 
 test("listFiles filters tree by prefix", async () => {
   const client = clientReturning({
-    "/git/trees/HEAD?recursive=1": { tree: [
-      { path: "base/files/renovate.json", type: "blob" },
-      { path: "base/files/.github/CODEOWNERS", type: "blob" },
-      { path: "languages/terraform/fragment.json", type: "blob" },
-    ] },
+    "/git/trees/HEAD?recursive=1": {
+      tree: [
+        { path: "base/files/renovate.json", type: "blob" },
+        { path: "base/files/.github/CODEOWNERS", type: "blob" },
+        { path: "languages/terraform/fragment.json", type: "blob" },
+      ],
+    },
   });
   const src = new GitHubTemplateSource({ client, repo: "o/c" });
   expect((await src.listFiles("base/files/")).sort()).toEqual([
-    "base/files/.github/CODEOWNERS", "base/files/renovate.json",
+    "base/files/.github/CODEOWNERS",
+    "base/files/renovate.json",
   ]);
 });
 
@@ -39,12 +42,14 @@ test("readFragmentManifest parses fragment.json content", async () => {
 
 test("listLanguages returns unique language dir names from tree", async () => {
   const client = clientReturning({
-    "/git/trees/HEAD?recursive=1": { tree: [
-      { path: "languages/terraform/fragment.json", type: "blob" },
-      { path: "languages/typescript/fragment.json", type: "blob" },
-      { path: "languages/typescript/files/.editorconfig", type: "blob" },
-      { path: "base/fragment.json", type: "blob" },
-    ] },
+    "/git/trees/HEAD?recursive=1": {
+      tree: [
+        { path: "languages/terraform/fragment.json", type: "blob" },
+        { path: "languages/typescript/fragment.json", type: "blob" },
+        { path: "languages/typescript/files/.editorconfig", type: "blob" },
+        { path: "base/fragment.json", type: "blob" },
+      ],
+    },
   });
   const src = new GitHubTemplateSource({ client, repo: "o/c" });
   expect((await src.listLanguages()).sort()).toEqual(["terraform", "typescript"]);

@@ -1,4 +1,4 @@
-import { GitHubClient, type FragmentManifest, type TemplateSource } from "@repository-fanout/core";
+import type { FragmentManifest, GitHubClient, TemplateSource } from "@repository-fanout/core";
 
 /**
  * GitHub Contents API は base64(UTF-8 bytes) を改行入りで返す。

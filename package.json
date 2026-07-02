@@ -2,9 +2,18 @@
   "name": "repository-fanout",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.2"
   }
 }

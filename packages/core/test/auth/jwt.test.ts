@@ -3,7 +3,12 @@ import { createAppJwt } from "../../src/auth/jwt.js";
 
 async function genKeyPair(): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(
-    { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
     true,
     ["sign", "verify"],
   );
@@ -35,7 +40,12 @@ function b64urlToBytes(s: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-async function expectValidJwt(jwt: string, publicKey: CryptoKey, iss: string, now: number): Promise<void> {
+async function expectValidJwt(
+  jwt: string,
+  publicKey: CryptoKey,
+  iss: string,
+  now: number,
+): Promise<void> {
   const parts = jwt.split(".");
   expect(parts).toHaveLength(3);
   const [h, p, s] = parts as [string, string, string];
@@ -58,12 +68,20 @@ async function expectValidJwt(jwt: string, publicKey: CryptoKey, iss: string, no
 
 test("createAppJwt signs a verifiable RS256 JWT from a PKCS#8 key", async () => {
   const kp = await genKeyPair();
-  const jwt = await createAppJwt({ appId: "12345", privateKeyPem: await pkcs8Pem(kp), now: 1_000_000 });
+  const jwt = await createAppJwt({
+    appId: "12345",
+    privateKeyPem: await pkcs8Pem(kp),
+    now: 1_000_000,
+  });
   await expectValidJwt(jwt, kp.publicKey, "12345", 1_000_000);
 });
 
 test("createAppJwt accepts a PKCS#1 (RSA PRIVATE KEY) key and signs verifiably", async () => {
   const kp = await genKeyPair();
-  const jwt = await createAppJwt({ appId: "999", privateKeyPem: await pkcs1Pem(kp), now: 2_000_000 });
+  const jwt = await createAppJwt({
+    appId: "999",
+    privateKeyPem: await pkcs1Pem(kp),
+    now: 2_000_000,
+  });
   await expectValidJwt(jwt, kp.publicKey, "999", 2_000_000);
 });

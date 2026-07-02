@@ -45,6 +45,20 @@ test("applyExtendsField throws RenovateParseError on invalid json", () => {
   expect(() => applyExtendsField("// json5 comment\n{}", managed, universe)).toThrow(RenovateParseError);
 });
 
+test("applyExtendsField preserves a bare-string repo-own extends (appended after managed)", () => {
+  const actual = JSON.stringify({ extends: "github>myorg/custom", automerge: true });
+  const out = applyExtendsField(actual, managed, universe)!;
+  const parsed = JSON.parse(out);
+  expect(parsed.extends).toEqual([...managed, "github>myorg/custom"]);
+  expect(parsed.automerge).toBe(true);
+});
+
+test("applyExtendsField treats a bare-string extends equal to managed as a no-op", () => {
+  // 文字列形 "x" は正準化で ["x"] 相当。単一 managed と意味的に同一なら書き換えない（フォーマット不可侵）。
+  const actual = JSON.stringify({ extends: "github>o/renovate-config" });
+  expect(applyExtendsField(actual, ["github>o/renovate-config"], universe)).toBeNull();
+});
+
 test("applyExtendsField throws RenovateParseError on non-object top-level json", () => {
   for (const bad of ["null", "123", '"str"', "[1,2]"]) {
     expect(() => applyExtendsField(bad, managed, universe)).toThrow(RenovateParseError);

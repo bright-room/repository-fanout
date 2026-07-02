@@ -1,3 +1,4 @@
+# >>> repository-fanout managed >>>
 # OS / editor
 .DS_Store
 Thumbs.db
@@ -19,3 +20,4 @@ dist/
 *.tsbuildinfo
 npm-debug.log*
 pnpm-debug.log*
+# <<< repository-fanout managed <<<

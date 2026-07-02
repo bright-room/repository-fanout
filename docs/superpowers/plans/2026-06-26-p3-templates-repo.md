@@ -67,10 +67,11 @@ git commit -m "feat: add common-files templates repository"
 `base/profile.json`:
 ```json
 {
-  "renovate": ["github>bright-room/common-files//presets/default"],
+  "renovate": ["github>bright-room/renovate-config"],
   "gitignore": ["# OS / editor", ".DS_Store", "Thumbs.db", ".idea/", ".vscode/", "", "# env", ".env", ".env.local"]
 }
 ```
+（preset 本体は `bright-room/renovate-config`（構築済み・public）。common-files には extends 参照文字列だけを置く）
 
 `base/files/renovate.json`:
 ```json
@@ -103,37 +104,9 @@ git commit -m "feat: add base profile (renovate/codeowners/release/gitignore tem
 
 ---
 
-## Task 3: presets/ を配置（default + 言語別）
+## Task 3: ~~presets/ を配置~~（不要になった）
 
-**Files:**
-- Create: `presets/default.json`, `presets/terraform.json`, `presets/typescript.json`
-
-- [ ] **Step 1: sample の presets/ をコピー**
-
-`presets/default.json`（現行 `organization-structure/renovate.json` の共通設定を集約。`terraform` ブロックは default から除外し terraform preset へ）：sample と同一。
-
-`presets/terraform.json`:
-```json
-{
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Terraform 固有設定",
-  "terraform": { "enabled": true }
-}
-```
-
-`presets/typescript.json`: sample と同一（@types グルーピング例）。
-
-- [ ] **Step 2: preset の妥当性を検証（renovate CLI）**
-
-Run: `npx --yes renovate-config-validator presets/default.json presets/terraform.json presets/typescript.json`
-Expected: すべて valid
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add presets
-git commit -m "feat: add renovate presets (default + terraform + typescript)"
-```
+**2026-07-02 仕様変更により削除**：renovate preset 本体は `bright-room/renovate-config`（構築済み・public、`default.json` + `java/go/terraform/rust/typescript/kotlin.json`）に集約済み。common-files に `presets/` は置かない。preset の妥当性検証・ガバナンスは renovate-config リポ側で行う。
 
 ---
 
@@ -147,12 +120,12 @@ git commit -m "feat: add renovate presets (default + terraform + typescript)"
 `profiles/terraform/profile.json`:
 ```json
 {
-  "renovate": ["github>bright-room/common-files//presets/terraform"],
+  "renovate": ["github>bright-room/renovate-config:terraform"],
   "gitignore": ["# terraform", ".terraform/", "*.tfstate", "*.tfstate.*", "crash.log", "*.tfvars"]
 }
 ```
 
-`profiles/springboot/profile.json`:
+`profiles/springboot/profile.json`（java+Spring 用。kotlin preset は renovate-config 側で springBoot を内包済み）:
 ```json
 { "renovate": ["group:springBoot"] }
 ```
@@ -160,10 +133,12 @@ git commit -m "feat: add renovate presets (default + terraform + typescript)"
 `profiles/typescript/profile.json`:
 ```json
 {
-  "renovate": ["github>bright-room/common-files//presets/typescript"],
+  "renovate": ["github>bright-room/renovate-config:typescript"],
   "gitignore": ["# node", "node_modules/", "dist/", "*.tsbuildinfo", "npm-debug.log*", "pnpm-debug.log*"]
 }
 ```
+
+（言語 profile を増やす場合：renovate-config に同名 preset があれば `github>bright-room/renovate-config:<name>` を参照。`java`/`go`/`rust`/`kotlin` は preset 構築済みなので profile ディレクトリを足すだけ）
 
 `profiles/typescript/files/.editorconfig`: sample と同一。
 
@@ -206,6 +181,6 @@ PR を出してレビュー → マージ（ブランチ保護が効いている
 
 ## Self-Review
 
-- **Spec カバレッジ**：§3 テンプレ構成（base/seeds/profiles/presets・composed・public・ガバナンス）= Task1-5。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
-- **整合**：preset 参照 `github>bright-room/common-files//presets/...` はリポ名 `common-files` と一致（worker 側は `TEMPLATES_REPO` 変数で参照）。リポ名を変える場合は profile.json と worker var の両方を更新（spec §3 ではレンダラ変数化を推奨。本 MVP は固定名で進める）。
-- **Placeholder**：`{{renovate_extends}}`/`{{gitignore}}`/`{{codeowner}}` は**意図的なテンプレ変数**（fanout が描画）。それ以外の TODO は無し。
+- **Spec カバレッジ**：§3 テンプレ構成（base/seeds/profiles・fragment+戦略・ガバナンス）= Task1-5（Task3 は仕様変更で削除）。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
+- **整合**：renovate preset 参照は `github>bright-room/renovate-config(:name)`（別リポ・構築済み・public 必須）。common-files 自体のリポ名は worker の `TEMPLATES_REPO` 変数でのみ参照される（profile.json 内に自己参照なし）。
+- **Placeholder**：`{{renovate_extends}}`/`{{gitignore}}`/`{{codeowner}}` は**意図的なテンプレ変数**（fanout が描画。renovate.json は新規作成時のみ、gitignore/CODEOWNERS は managed-block の中身）。それ以外の TODO は無し。

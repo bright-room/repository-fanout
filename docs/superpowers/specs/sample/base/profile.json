@@ -1,6 +1,6 @@
 {
-  "_comment": "base = 全リポに常時適用される暗黙の profile。files/ は常時配布。renovate / gitignore は合成貢献（各 base/files のテンプレ {{...}} に描画される）。",
-  "renovate": ["github>bright-room/common-files//presets/default"],
+  "_comment": "base = 全リポに常時適用される暗黙の profile。renovate は管理する extends エントリ（preset 本体は bright-room/renovate-config）、gitignore は managed-block に入る行。",
+  "renovate": ["github>bright-room/renovate-config"],
   "gitignore": [
     "# OS / editor",
     ".DS_Store",

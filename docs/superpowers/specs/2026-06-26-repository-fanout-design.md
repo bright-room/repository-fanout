@@ -48,9 +48,9 @@
 
 ---
 
-## 3. データモデル（言語ベース・単一軸）
+## 3. データモデル（languages + bundles の2軸）
 
-「何を配るか」をファイル名で列挙するのではなく、**リポの言語（languages）を宣言**し、配布物はシステムが導出する。
+「何を配るか」をファイル名で列挙するのではなく、**リポの言語（languages）と opt-in 束（bundles）を宣言**し、配布物はシステムが導出する。マージ意味論は両軸とも同一（fragment + files を寄与）で、違いは分類だけ — languages には本物の言語のみを置き、oss のような opt-in 配布束は bundles に置く。
 
 ### manifest（Terraform が生成 → fanout の KV に保存。git には置かない）
 
@@ -60,6 +60,7 @@
   "repositories": {
     "endpoint-gate": {
       "languages": ["terraform"],
+      "bundles": [],
       "vars": { "codeowner": "bright-room/br-maintainers" }
     }
   }
@@ -67,16 +68,18 @@
 ```
 
 - `languages` = リポを構成する言語の配列（`terraform`, `typescript`, `java`, `kotlin`, `go`, `rust` …）。**renovate-config の preset 名と 1:1 対応**する単一軸。
+- `bundles` = 言語と独立な opt-in 配布束（`oss` 等）の配列。**省略可（省略時 `[]`）**。languages と同じく tree から動的発見・未知名はエラー。
 - **framework 軸は持たない**：framework 対応は renovate-config の言語 preset に内包する設計（例：java.json / kotlin.json が `group:springBoot` を extends、rust.json が Tauri グルーピングを内包）。fanout 側に springboot のような framework タグは置かない。
 - `vars` = テンプレ置換用の値（Org/個人差の吸収）。Terraform が注入。
 - **保存先は git ではなく fanout の KV**（キー＝アカウント名）。理由は「PR ブランチへ manifest を後追いコミット → CI 二重実行 / 必須チェック未付与で merge ブロック」を避けるため（structure リポは `check-code-style`/`plan`/`validate` を必須チェックにしている）。manifest のレビューは .tf の diff＋plan コメントで代替する。
 
 ### テンプレ専用リポ構成
 
-**1 language = 1 自己完結ディレクトリ**。その言語の全貢献（配布ファイル＋renovate 等の合成貢献）を `languages/<lang>/` に集約し、中央マップを持たない。ディレクトリ内の宣言ファイルは `fragment.json`（その単位が寄与する断片の宣言）。具体例は `docs/superpowers/specs/sample/` を参照。
+**1 単位（language / bundle）= 1 自己完結ディレクトリ**。その単位の全貢献（配布ファイル＋renovate 等の合成貢献）を `languages/<lang>/` に集約し、中央マップを持たない。ディレクトリ内の宣言ファイルは `fragment.json`（その単位が寄与する断片の宣言）。具体例は `docs/superpowers/specs/sample/` を参照。
 
 ```
 common-files/
+  strategies.json             # 配布先パス→戦略の map（導出ルール参照）
   base/                       # 全リポに常時適用される言語非依存の単位
     fragment.json             #   非ファイル貢献の宣言（renovate extends / gitignore 行）
     files/                    #   常時適用（反映方法はパスごとの sync 戦略で決まる）
@@ -96,6 +99,10 @@ common-files/
       fragment.json           #   { "renovate": ["github>bright-room/renovate-config:java"] }
     kotlin/
       fragment.json           #   { "renovate": ["github>bright-room/renovate-config:kotlin"] }
+  bundles/                    # 宣言された bundle の時だけ適用（言語と独立な opt-in 束）
+    oss/
+      fragment.json           #   寄与キーは省略可（oss は配布ファイルのみ）
+      files/                  #   CONTRIBUTING.md / SECURITY.md
 ```
 
 > **renovate preset は common-files に置かない**：preset 本体は `bright-room/renovate-config`（public・構築済み）にあり、`github>bright-room/renovate-config`（=default.json）／`github>bright-room/renovate-config:terraform` の形式で各リポの renovate が直接解決する。**preset が private だと解決に失敗する**ため renovate-config は public 必須。common-files 側は extends エントリ（参照文字列）を fragment.json に持つだけ（**言語名 = preset 名の 1:1 対応**。規約導出も可能だが、魔法を避け明示宣言を維持する）。
@@ -108,37 +115,37 @@ common-files/
 
 **大原則：fanout はファイル全体を無条件に所有しない。「fanout が管理する断片（fragment）」だけを描画し、パスごとの sync 戦略に従って実ファイルへ反映する。リポ独自部分（ブロック外・extends 以外のキー・リポが足した extends エントリ）は不可侵。**
 
-対象リポ（宣言 languages = `L`）に対して：
+対象リポ（宣言 languages = `L`、宣言 bundles = `B`）に対して：
 
-- **対象ファイル** = `base/files/**` ∪ `seeds/**` ∪ （各 `l ∈ L` の `languages/l/files/**`）。
-  - 同一パスを複数 language が出したら **衝突＝設定エラー**（1パス=1提供元）。
-  - **未知 language はエラー**：`languages/<lang>/` が存在しない `l` を宣言したら reconcile せずエラー（Terraform 側のタイポが黙って base のみ配布に劣化するのを防ぐ）。「貢献なし」を許す言語は空ディレクトリ/空 fragment.json を明示的に置く。
+- **対象ファイル** = `base/files/**` ∪ `seeds/**` ∪ （各 `l ∈ L` の `languages/l/files/**`）∪ （各 `b ∈ B` の `bundles/b/files/**`）。
+  - 同一パスを複数の language / bundle が出したら **衝突＝設定エラー**（1パス=1提供元）。
+  - **未知 language / bundle はエラー**：`languages/<lang>/`（`bundles/<name>/`）が存在しない名前を宣言したら reconcile せずエラー（Terraform 側のタイポが黙って base のみ配布に劣化するのを防ぐ）。「貢献なし」を許す言語は空ディレクトリ/空 fragment.json を明示的に置く。
 - **fragment 描画** = files テンプレの `{{var}}` 置換＋fragment.json 貢献の合成（従来どおり。連結・順序保持 dedup）。
-- **sync 戦略はパスごとにレジストリで決まる**（型付き。core に登録。未登録の files/** は replace）：
+- **sync 戦略はテンプレリポ直下の `strategies.json`（配布先パス→戦略名の map）で決まる**（許可値は `extends-field` / `managed-block` のみ。未登録の files/** は replace、`seeds/**` は常に create-only。**strategies.json 不在はエラー**＝黙って replace に降格させない。新しいマージ意味論の追加はコード変更）：
 
 | 戦略 | 対象 | 反映方法 |
 |---|---|---|
 | **replace** | 既定（`release.yml`、`.editorconfig` 等） | ファイル全体を fragment に収束（従来どおり） |
 | **create-only** | `seeds/**` | 無ければ配置、あれば一切触らない |
 | **managed-block** | `.gitignore`、`.github/CODEOWNERS` | マーカー行間だけを更新。ブロック外は不可侵 |
-| **json-field** | `renovate.json` | 実ファイルを JSON パースし **`extends` だけ**更新。他キーは不可侵 |
+| **extends-field** | `renovate.json` | 実ファイルを JSON パースし **`extends` だけ**更新。他キーは不可侵 |
 
 **managed-block の意味論**：
 - マーカーは `# >>> repository-fanout managed >>>` 〜 `# <<< repository-fanout managed <<<`。
 - ブロックは**ファイル先頭**。`.gitignore` も CODEOWNERS も**後勝ち**なので、ブロックより下に書いたリポ独自ルール（個別パス指定・`!` 再包含等）が常に優先＝**fanout はリポの個別指定を上書きできない構造**。
 - 実ファイルにブロックが有れば中身だけ差し替え／無ければ先頭に挿入（既存内容は下に温存）／ファイル自体が無ければブロックのみで新規作成。中身が同一なら no-op。
-- ブロックの中身 = base の files テンプレ（例 CODEOWNERS: `* @{{codeowner}}`）＋ language 貢献（例 gitignore: fragment.json のセクション配列。セクション間は空行区切り）の合成。
+- ブロックの中身 = base の files テンプレ（例 CODEOWNERS: `* @{{codeowner}}`）＋ language / bundle 貢献（例 gitignore: fragment.json のセクション配列。セクション間は空行区切り）の合成。
 
-**renovate.json（json-field: extends）の意味論**：
+**renovate.json（extends-field）の意味論**：
 - preset 本体は `bright-room/renovate-config`。fragment.json は extends エントリ（参照文字列）だけを宣言する。
   base: `["github>bright-room/renovate-config"]` ／ terraform: `["github>bright-room/renovate-config:terraform"]` ／ java: `["github>bright-room/renovate-config:java"]`（言語名 = preset 名の 1:1。framework は preset 側に内包済みなので fanout には現れない）。
-- **管理エントリの全集合（universe）** = base ∪ **全 language**（宣言の有無に関わらず）の renovate 貢献の和集合。
-- **望ましい extends** = 「宣言 languages から導出した管理エントリ（base→宣言順、順序保持 dedup）」 ++ 「実ファイルの extends のうち universe 外のエントリ（リポ独自。相対順を保持し**管理分の後ろ**に温存）」。renovate は後勝ちマージなので、リポ独自エントリが常に優先される。
+- **管理エントリの全集合（universe）** = base ∪ **全 language ∪ 全 bundle**（宣言の有無に関わらず）の renovate 貢献の和集合。
+- **望ましい extends** = 「宣言 languages / bundles から導出した管理エントリ（base→languages 宣言順→bundles 宣言順、順序保持 dedup）」 ++ 「実ファイルの extends のうち universe 外のエントリ（リポ独自。相対順を保持し**管理分の後ろ**に温存）」。renovate は後勝ちマージなので、リポ独自エントリが常に優先される。
 - 実ファイルが存在：JSON パース → `extends` のみ差し替え。**他のキー（packageRules 等リポ固有設定）は不可侵**。extends が意味的に同一なら no-op（フォーマットも触らない）。パース不能（JSON5・コメント付き等）→ 該当リポを failed として表面化（自前管理したいリポは `exclude` で逃がす）。
 - 実ファイルが無い：`base/files/renovate.json` テンプレ（`$schema` + extends）で新規作成。`$schema` は新規作成時のみ付与。
 - **技術スタック変更のユースケース**：`languages: ["typescript"]` → `["kotlin"]` に変えると extends の typescript preset が kotlin preset に置き換わるだけの PR が出る。`["java"]` → `["java","typescript"]` なら `:typescript` が追加されるだけ。リポの他の renovate 設定・独自 extends エントリは生き残る。
 
-**レジストリ**：パス → 戦略＋fragment 合成規則（貢献の型・連結/dedup・シリアライズ・検証）を core に1エントリとして登録する。新しい managed-block / json-field ファイルの追加はレジストリ1エントリで対応（汎用文字列置換で済ませない＝誤レンダリング/インジェクション防止）。現状エントリ：`renovate.json`（json-field: extends）、`.gitignore`（managed-block）、`.github/CODEOWNERS`（managed-block）。
+**strategies.json**：パス → 戦略の割り当てはテンプレ専用リポ直下の `strategies.json` で宣言する（データ駆動。既存戦略の割り当てはコード変更なし）。fragment 合成規則（貢献の型・連結/dedup・シリアライズ・検証）は従来どおり core のコードに置く。現状エントリ：`renovate.json`（extends-field）、`.gitignore`（managed-block）、`.github/CODEOWNERS`（managed-block）。
 
 ### テンプレ変数置換
 
@@ -165,6 +172,7 @@ module "repository_endpoint_gate" {
   topics      = ["..."]
 
   languages = ["terraform"]         # ← このリポを構成する言語を宣言
+  bundles   = []                    # ← opt-in 束（oss 等）。省略可
 
   fanout_vars = {
     codeowner = "bright-room/br-maintainers"   # 未指定ならアカウント既定
@@ -180,6 +188,7 @@ locals {
     repositories = {
       (module.repository_endpoint_gate.name) = {
         languages = module.repository_endpoint_gate.languages
+        bundles  = module.repository_endpoint_gate.bundles
         vars     = module.repository_endpoint_gate.fanout_vars
       }
       # repo を増やすたびここに1行追加（or for_each 化）
@@ -603,7 +612,7 @@ Codex レビュー（`2026-06-26-repository-fanout-codex-review.md`）の HIGH/M
 ### 16-4. 可観測性・部分失敗のリカバリ
 
 - **run 結果を KV（または D1）に記録**：run 単位＋アカウント単位＋リポ単位の状態（success / no-op / failed＋理由）。
-- 失敗時アラート（ログ/通知）。HTTP 202 後の失敗が見えなくならないようにする。
+- **失敗時 Discord 通知**：リポ単位の失敗（failed 記録時）を Discord Webhook（secret `DISCORD_WEBHOOK_URL`。未設定ならスキップ）へプレーンテキストで通知する。**通知の失敗は握りつぶす**（通知が reconcile を壊してはならない）。run 単位の集約はしない（子 Workflow が独立で待ち合わせ点がないため）。HTTP 202 後の失敗が見えなくならないようにする。
 - **部分 fan-out 再試行**：run 結果を見て「失敗したリポだけ」を再 kick できる（全件やり直し不要）。
 - installation 突き合わせ失敗（§4）も run 結果に failed として残す。
 

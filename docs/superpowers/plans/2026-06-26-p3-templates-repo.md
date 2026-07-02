@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 正本となるテンプレ専用リポ `bright-room/common-files` を作成し、`base/seeds/languages` 構成で v0 テンプレを配置、ガバナンス（ブランチ保護・必須レビュー）を効かせる（renovate preset は `renovate-config` に構築済み）。
+**Goal:** 正本となるテンプレ専用リポ `bright-room/common-files` を作成し、`base/seeds/languages/bundles` + `strategies.json` 構成で v0 テンプレを配置、ガバナンス（ブランチ保護・必須レビュー）を効かせる（renovate preset は `renovate-config` に構築済み）。
 
 **Architecture:** 構成は `docs/superpowers/specs/sample/` をそのまま本番化する。リポ自体は `organization-structure` の Terraform で宣言的に作成（spec §3 ガバナンス要件）。
 
@@ -152,6 +152,34 @@ git commit -m "feat: add base fragment (renovate/codeowners/release/gitignore te
 ```bash
 git add languages
 git commit -m "feat: add languages (terraform/typescript/java/kotlin)"
+```
+
+---
+
+## Task 4.5: strategies.json と bundles/oss を配置
+
+**Files:**
+- Create: `strategies.json`, `bundles/oss/fragment.json`, `bundles/oss/files/CONTRIBUTING.md`, `bundles/oss/files/SECURITY.md`
+
+- [ ] **Step 1: repository-fanout の sample から同一内容を配置**
+
+コピー元: `repository-fanout/docs/superpowers/specs/sample/strategies.json` と `sample/bundles/oss/**`。
+
+`strategies.json`（リポルート。不在だと fanout の reconcile がエラーになる必須ファイル）:
+
+```json
+{
+  "renovate.json": "extends-field",
+  ".gitignore": "managed-block",
+  ".github/CODEOWNERS": "managed-block"
+}
+```
+
+- [ ] **Step 2: commit**
+
+```bash
+git add strategies.json bundles
+git commit -m "feat: add strategies.json and bundles/oss"
 ```
 
 ---

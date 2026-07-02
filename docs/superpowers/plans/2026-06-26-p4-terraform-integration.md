@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** structure リポ（`organization-structure` / `kukv/structure`）の repository モジュールに `languages` / `fanout_vars` を追加し、`fanout_manifest` を出力、on-merge CI で manifest を生成して fanout `POST /sync/{account}`（HMAC 署名）する。
+**Goal:** structure リポ（`organization-structure` / `kukv/structure`）の repository モジュールに `languages` / `bundles` / `fanout_vars` を追加し、`fanout_manifest` を出力、on-merge CI で manifest を生成して fanout `POST /sync/{account}`（HMAC 署名）する。
 
 **Architecture:** spec §3・§6・§16-1。manifest は git に置かず、apply 後に CI が `terraform output` で生成し HMAC 署名して fanout へ送信。`terraform output` が空/不在なら CI を hard fail。
 
@@ -28,6 +28,12 @@ variable "languages" {
   default     = []
 }
 
+variable "bundles" {
+  description = "言語と独立な opt-in 配布束（oss 等）"
+  type        = list(string)
+  default     = []
+}
+
 variable "fanout_vars" {
   description = "fanout テンプレ置換用の変数（codeowner 等）"
   type        = map(string)
@@ -47,6 +53,7 @@ output "fanout_entry" {
   description = "fanout manifest の1リポ分エントリ"
   value = {
     languages = var.languages
+    bundles   = var.bundles
     vars     = var.fanout_vars
   }
 }
@@ -87,7 +94,7 @@ locals {
   fanout_repositories = {
     for name, mod in local.fanout_modules :
     name => mod.fanout_entry
-    if length(mod.fanout_entry.languages) > 0
+    if length(mod.fanout_entry.languages) > 0 || length(mod.fanout_entry.bundles) > 0
   }
 }
 
@@ -113,7 +120,7 @@ output "fanout_manifest" {
 - [ ] **Step 3: plan で manifest output を確認**
 
 Run: `terraform plan` → `terraform output -json fanout_manifest`（apply 後）で内容確認。
-Expected: `{ "account": "bright-room", "repositories": { "endpoint-gate": { "languages": ["terraform"], "vars": {...} } } }`
+Expected: `{ "account": "bright-room", "repositories": { "endpoint-gate": { "languages": ["terraform"], "bundles": [], "vars": {...} } } }`
 
 - [ ] **Step 4: Commit**
 

@@ -26,9 +26,9 @@ const source = () => memorySource({
     "languages/typescript/files/.editorconfig": "root = true\n",
   },
   fragments: {
-    base: { renovate: ["github>o/renovate-config"], gitignore: ["# base", ".DS_Store"] },
-    "languages/terraform": { renovate: ["github>o/renovate-config:terraform"], gitignore: ["# tf", "*.tfstate"] },
-    "languages/typescript": { renovate: ["github>o/renovate-config:typescript"], gitignore: ["# node", "node_modules/"] },
+    base: { renovate: ["github>o/renovate-config"], gitignore: [{ section_comment: "base", ignores: [".DS_Store"] }] },
+    "languages/terraform": { renovate: ["github>o/renovate-config:terraform"], gitignore: [{ section_comment: "tf", ignores: ["*.tfstate"] }] },
+    "languages/typescript": { renovate: ["github>o/renovate-config:typescript"], gitignore: [{ section_comment: "node", ignores: ["node_modules/"] }] },
     "languages/java": { renovate: ["github>o/renovate-config:java"] },
   },
   languages: ["terraform", "typescript", "java"],
@@ -62,7 +62,7 @@ test("managed-block entries compose block content (vars + language lines)", asyn
   const entries = await resolveDesiredEntries({ source: source(), languages: ["terraform"], vars: { codeowner: "o/team" }, exclude: [] });
   const gi = entries.find((e) => e.path === ".gitignore")!;
   if (gi.strategy !== "managed-block") throw new Error("wrong strategy");
-  expect(gi.blockContent).toBe("# base\n.DS_Store\n# tf\n*.tfstate");
+  expect(gi.blockContent).toBe("# base\n.DS_Store\n\n# tf\n*.tfstate");
   const co = entries.find((e) => e.path === ".github/CODEOWNERS")!;
   if (co.strategy !== "managed-block") throw new Error("wrong strategy");
   expect(co.blockContent).toBe("* @o/team");
@@ -75,7 +75,7 @@ test("composed replacements insert $ patterns literally (no $&/$$ expansion)", a
       "base/files/renovate.json": '{\n  "extends": [{{renovate_extends}}]\n}\n',
     },
     fragments: {
-      base: { renovate: ["github>o/rc$&x", "a$$b"], gitignore: ["cache$&junk", "a$$b", "x$`y"] },
+      base: { renovate: ["github>o/rc$&x", "a$$b"], gitignore: [{ ignores: ["cache$&junk", "a$$b", "x$`y"] }] },
     },
     languages: [],
   });

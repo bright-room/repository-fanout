@@ -102,7 +102,7 @@ common-files/
 >
 > **テンプレ専用リポのガバナンス（必須）**：コンテンツの SoT なので、誤/悪意マージが多数リポへ伝播する。**ブランチ保護・CODEOWNERS・必須レビュー・必須ステータスチェック**を課す（structure リポと同等）。renovate-config リポにも同じガバナンスを適用する。Terraform 管理対象に含めて宣言的に設定する。
 
-**fragment.json**：`files/` に静的に置けない「合成が必要な貢献」を宣言する。今は `renovate`（extends エントリ）と `gitignore`（行の配列）。将来 language ごとの合成が要るツールが増えても **キーを足すだけ**で拡張でき、language の定義はそのディレクトリ1か所に集約され続ける。**配布ファイルを足すだけなら `files/` に置くだけ（fanout 改修不要）。**
+**fragment.json**：`files/` に静的に置けない「合成が必要な貢献」を宣言する。今は `renovate`（extends エントリ）と `gitignore`（セクションの配列＝`{ section_comment?, ignores[] }`。`section_comment` は `#` 不要＝描画時に自動付与）。将来 language ごとの合成が要るツールが増えても **キーを足すだけ**で拡張でき、language の定義はそのディレクトリ1か所に集約され続ける。**配布ファイルを足すだけなら `files/` に置くだけ（fanout 改修不要）。**
 
 ### 配布物の導出ルール（fanout）— fragment + sync 戦略モデル
 
@@ -127,7 +127,7 @@ common-files/
 - マーカーは `# >>> repository-fanout managed >>>` 〜 `# <<< repository-fanout managed <<<`。
 - ブロックは**ファイル先頭**。`.gitignore` も CODEOWNERS も**後勝ち**なので、ブロックより下に書いたリポ独自ルール（個別パス指定・`!` 再包含等）が常に優先＝**fanout はリポの個別指定を上書きできない構造**。
 - 実ファイルにブロックが有れば中身だけ差し替え／無ければ先頭に挿入（既存内容は下に温存）／ファイル自体が無ければブロックのみで新規作成。中身が同一なら no-op。
-- ブロックの中身 = base の files テンプレ（例 CODEOWNERS: `* @{{codeowner}}`）＋ language 貢献（例 gitignore: fragment.json の行配列）の合成。
+- ブロックの中身 = base の files テンプレ（例 CODEOWNERS: `* @{{codeowner}}`）＋ language 貢献（例 gitignore: fragment.json のセクション配列。セクション間は空行区切り）の合成。
 
 **renovate.json（json-field: extends）の意味論**：
 - preset 本体は `bright-room/renovate-config`。fragment.json は extends エントリ（参照文字列）だけを宣言する。

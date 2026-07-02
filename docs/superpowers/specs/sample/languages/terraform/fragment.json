@@ -1,11 +1,6 @@
 {
   "renovate": ["github>bright-room/renovate-config:terraform"],
   "gitignore": [
-    "# terraform",
-    ".terraform/",
-    "*.tfstate",
-    "*.tfstate.*",
-    "crash.log",
-    "*.tfvars"
+    { "section_comment": "terraform", "ignores": [".terraform/", "*.tfstate", "*.tfstate.*", "crash.log", "*.tfvars"] }
   ]
 }

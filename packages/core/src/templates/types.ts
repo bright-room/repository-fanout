@@ -1,9 +1,17 @@
+/** .gitignore の1セクション（コメント見出し + その配下の無視パターン） */
+export interface GitignoreSection {
+  /** セクション見出しラベル（例: "OS / editor"）。描画時に "# " が自動付与される。省略時は見出しなし */
+  section_comment?: string;
+  /** このセクションが足す無視パターン行 */
+  ignores: string[];
+}
+
 /** base/ または languages/<lang>/ の fragment.json */
 export interface FragmentManifest {
   /** renovate extends エントリ（renovate-config 参照 or 組み込み preset） */
   renovate?: string[];
-  /** .gitignore の managed-block に足す行 */
-  gitignore?: string[];
+  /** .gitignore の managed-block に足すセクション群 */
+  gitignore?: GitignoreSection[];
 }
 
 /** テンプレ専用リポからの読み取りを抽象化（worker/cli は GitHub 経由、test はメモリ） */

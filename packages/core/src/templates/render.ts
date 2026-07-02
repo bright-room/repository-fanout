@@ -1,8 +1,22 @@
-import { dedupePreserveOrder } from "../util/dedupe.js";
+import type { GitignoreSection } from "./types.js";
 
-/** .gitignore の {{gitignore}} に入れる改行区切りテキストを作る */
-export function renderGitignore(contributions: string[][]): string {
-  return dedupePreserveOrder(contributions.flat()).join("\n");
+/**
+ * .gitignore の {{gitignore}} に入れるテキストを作る。
+ * 各セクションは見出しコメント（`section_comment` に "# " を自動付与）+ 無視パターンで描画し、
+ * セクション間は空行1つで区切る。無視パターンは全セクション横断で重複除去（初出優先）。
+ * 除去後に空になったセクションは見出しごと省く。
+ */
+export function renderGitignore(contributions: GitignoreSection[][]): string {
+  const seen = new Set<string>();
+  const blocks: string[] = [];
+  for (const section of contributions.flat()) {
+    const fresh = section.ignores.filter((ig) => !seen.has(ig));
+    for (const ig of fresh) seen.add(ig);
+    if (fresh.length === 0) continue;
+    const lines = section.section_comment ? [`# ${section.section_comment}`, ...fresh] : fresh;
+    blocks.push(lines.join("\n"));
+  }
+  return blocks.join("\n\n");
 }
 
 /** {{key}} を vars で置換。未知プレースホルダはそのまま残す */

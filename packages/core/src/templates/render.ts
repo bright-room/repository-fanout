@@ -1,11 +1,4 @@
-function dedupePreserveOrder(items: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const it of items) {
-    if (!seen.has(it)) { seen.add(it); out.push(it); }
-  }
-  return out;
-}
+import { dedupePreserveOrder } from "../util/dedupe.js";
 
 /** .gitignore の {{gitignore}} に入れる改行区切りテキストを作る */
 export function renderGitignore(contributions: string[][]): string {

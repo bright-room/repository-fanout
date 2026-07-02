@@ -1,13 +1,10 @@
+import { dedupePreserveOrder } from "../util/dedupe.js";
+
 export class RenovateParseError extends Error {
   constructor(readonly cause: unknown) {
     super(`renovate.json is not valid JSON (JSON5/comments unsupported): ${String(cause)}`);
     this.name = "RenovateParseError";
   }
-}
-
-function dedupePreserveOrder(items: string[]): string[] {
-  const seen = new Set<string>();
-  return items.filter((i) => (seen.has(i) ? false : (seen.add(i), true)));
 }
 
 /** renovate は文字列単体の extends も許す。配列/文字列/未定義を string[] へ正準化する。 */

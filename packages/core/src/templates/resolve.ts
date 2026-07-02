@@ -1,4 +1,5 @@
 import { renderGitignore, substituteVars } from "./render.js";
+import { dedupePreserveOrder } from "../util/dedupe.js";
 import type { DesiredEntry, FragmentManifest, TemplateSource } from "./types.js";
 
 export interface ResolveArgs {
@@ -20,11 +21,6 @@ function destPath(fullPath: string): string {
     .replace(/^base\/files\//, "")
     .replace(/^languages\/[^/]+\/files\//, "")
     .replace(/^seeds\//, "");
-}
-
-function dedupePreserveOrder(items: string[]): string[] {
-  const seen = new Set<string>();
-  return items.filter((i) => (seen.has(i) ? false : (seen.add(i), true)));
 }
 
 export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredEntry[]> {

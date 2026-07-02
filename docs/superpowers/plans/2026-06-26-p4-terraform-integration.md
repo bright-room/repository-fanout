@@ -12,7 +12,7 @@
 
 ---
 
-## Task 1: repository モジュールに languages / fanout_vars を追加
+## Task 1: repository モジュールに languages / bundles / fanout_vars を追加
 
 **Files:**
 - Modify: `<structure>/terraform/modules/repository/variables.tf`
@@ -68,7 +68,7 @@ Expected: Success
 
 ```bash
 git add modules/repository/variables.tf modules/repository/outputs.tf
-git commit -m "feat: add languages/fanout_vars to repository module"
+git commit -m "feat: add languages/bundles/fanout_vars to repository module"
 ```
 
 ---

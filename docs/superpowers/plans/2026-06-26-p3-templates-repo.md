@@ -175,7 +175,7 @@ git commit -m "feat: add languages (terraform/typescript/java/kotlin)"
 }
 ```
 
-- [ ] **Step 2: commit**
+- [ ] **Step 2: Commit**
 
 ```bash
 git add strategies.json bundles
@@ -214,6 +214,6 @@ PR を出してレビュー → マージ（ブランチ保護が効いている
 
 ## Self-Review
 
-- **Spec カバレッジ**：§3 テンプレ構成（base/seeds/languages・fragment+戦略・ガバナンス）= Task1-5（Task3 は仕様変更で削除）。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
+- **Spec カバレッジ**：§3 テンプレ構成（base/seeds/languages/bundles + strategies.json・fragment+戦略・ガバナンス）= Task1-5（Task4.5 含む。Task3 は仕様変更で削除）。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
 - **整合**：renovate preset 参照は `github>bright-room/renovate-config(:name)`（別リポ・構築済み・public 必須）。common-files 自体のリポ名は worker の `TEMPLATES_REPO` 変数でのみ参照される（fragment.json 内に自己参照なし）。
 - **Placeholder**：`{{renovate_extends}}`/`{{gitignore}}`/`{{codeowner}}` は**意図的なテンプレ変数**（fanout が描画。renovate.json は新規作成時のみ、gitignore/CODEOWNERS は managed-block の中身）。それ以外の TODO は無し。

@@ -27,23 +27,29 @@ test("listFiles filters tree by prefix", async () => {
   ]);
 });
 
-test("readProfileManifest parses profile.json content", async () => {
-  const content = btoa('{"renovate":["github>o/c//presets/terraform"]}');
+test("readFragmentManifest parses fragment.json content", async () => {
+  const content = btoa('{"renovate":["github>o/renovate-config:terraform"]}');
   const client = clientReturning({
-    "/contents/profiles/terraform/profile.json": { content, encoding: "base64" },
+    "/contents/languages/terraform/fragment.json": { content, encoding: "base64" },
   });
   const src = new GitHubTemplateSource({ client, repo: "o/c" });
-  const pm = await src.readProfileManifest("profiles/terraform");
-  expect(pm?.renovate).toEqual(["github>o/c//presets/terraform"]);
+  const fm = await src.readFragmentManifest("languages/terraform");
+  expect(fm?.renovate).toEqual(["github>o/renovate-config:terraform"]);
 });
 
-test("profileExists is true when profiles/<tag> appears in tree", async () => {
+test("listLanguages returns unique language dir names from tree", async () => {
   const client = clientReturning({
-    "/git/trees/HEAD?recursive=1": { tree: [{ path: "profiles/terraform/profile.json", type: "blob" }] },
+    "/git/trees/HEAD?recursive=1": { tree: [
+      { path: "languages/terraform/fragment.json", type: "blob" },
+      { path: "languages/typescript/fragment.json", type: "blob" },
+      { path: "languages/typescript/files/.editorconfig", type: "blob" },
+      { path: "base/fragment.json", type: "blob" },
+    ] },
   });
   const src = new GitHubTemplateSource({ client, repo: "o/c" });
-  expect(await src.profileExists("terraform")).toBe(true);
-  expect(await src.profileExists("nope")).toBe(false);
+  expect((await src.listLanguages()).sort()).toEqual(["terraform", "typescript"]);
+  expect(await src.languageExists("terraform")).toBe(true);
+  expect(await src.languageExists("nope")).toBe(false);
 });
 
 test("readFile decodes multibyte UTF-8 content losslessly", async () => {

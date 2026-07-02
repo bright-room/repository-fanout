@@ -1,4 +1,4 @@
-import { GitHubClient, type ProfileManifest, type TemplateSource } from "@repository-fanout/core";
+import { GitHubClient, type FragmentManifest, type TemplateSource } from "@repository-fanout/core";
 import { decodeBase64Utf8 } from "./base64.js";
 
 export interface TemplateSourceOpts {
@@ -40,12 +40,21 @@ export class GitHubTemplateSource implements TemplateSource {
     }
   }
 
-  async readProfileManifest(profileDir: string): Promise<ProfileManifest | null> {
-    const raw = await this.readFile(`${profileDir}/profile.json`);
-    return raw ? (JSON.parse(raw) as ProfileManifest) : null;
+  async readFragmentManifest(dir: string): Promise<FragmentManifest | null> {
+    const raw = await this.readFile(`${dir}/fragment.json`);
+    return raw ? (JSON.parse(raw) as FragmentManifest) : null;
   }
 
-  async profileExists(tag: string): Promise<boolean> {
-    return (await this.tree()).some((p) => p.startsWith(`profiles/${tag}/`));
+  async listLanguages(): Promise<string[]> {
+    const langs = new Set<string>();
+    for (const p of await this.tree()) {
+      const m = /^languages\/([^/]+)\//.exec(p);
+      if (m) langs.add(m[1]!);
+    }
+    return [...langs];
+  }
+
+  async languageExists(lang: string): Promise<boolean> {
+    return (await this.tree()).some((p) => p.startsWith(`languages/${lang}/`));
   }
 }

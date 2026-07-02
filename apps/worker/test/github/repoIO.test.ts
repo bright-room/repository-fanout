@@ -1,6 +1,6 @@
+import { GitHubClient } from "@repository-fanout/core";
 import { expect, test, vi } from "vitest";
 import { RepoIO } from "../../src/github/repoIO.js";
-import { GitHubClient } from "@repository-fanout/core";
 
 function client(map: Record<string, unknown>, notFound: string[] = []): GitHubClient {
   const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {
@@ -30,10 +30,9 @@ test("getDefaultBranch returns name and sha", async () => {
 
 test("readActualFiles returns map; missing paths omitted", async () => {
   const io = new RepoIO({
-    client: client(
-      { "/contents/renovate.json": { content: btoa("A\n"), encoding: "base64" } },
-      ["/contents/.github/CODEOWNERS"],
-    ),
+    client: client({ "/contents/renovate.json": { content: btoa("A\n"), encoding: "base64" } }, [
+      "/contents/.github/CODEOWNERS",
+    ]),
     repo: "o/r",
   });
   const got = await io.readActualFiles(["renovate.json", ".github/CODEOWNERS"], "main");

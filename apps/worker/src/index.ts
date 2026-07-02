@@ -1,4 +1,4 @@
-import { parseManifest } from "@repository-fanout/core";
+import { type Manifest, parseManifest } from "@repository-fanout/core";
 import { verifyHmac } from "./auth/hmac.js";
 import { putManifestCas } from "./kv/manifestStore.js";
 
@@ -14,8 +14,8 @@ export interface Env {
   [key: string]: unknown;
 }
 
-export { ParentWorkflow } from "./workflows/parent.js";
 export { ChildWorkflow } from "./workflows/child.js";
+export { ParentWorkflow } from "./workflows/parent.js";
 
 function secretFor(env: Env, account: string): string | undefined {
   const v = env[`SYNC_HMAC_SECRET__${account}`];
@@ -29,7 +29,8 @@ export default {
     const url = new URL(req.url);
     const parts = url.pathname.split("/").filter(Boolean); // ["sync", "{account}"]
 
-    if (req.method !== "POST" || parts[0] !== "sync") return new Response("not found", { status: 404 });
+    if (req.method !== "POST" || parts[0] !== "sync")
+      return new Response("not found", { status: 404 });
 
     const account = parts[1];
     const body = await req.text();
@@ -43,12 +44,22 @@ export default {
 
       const ts = Number(req.headers.get("X-Fanout-Timestamp"));
       const sig = req.headers.get("X-Fanout-Signature") ?? "";
-      const v = await verifyHmac({ secret, timestamp: ts, body, signature: sig, now, windowSec: HMAC_WINDOW_SEC });
+      const v = await verifyHmac({
+        secret,
+        timestamp: ts,
+        body,
+        signature: sig,
+        now,
+        windowSec: HMAC_WINDOW_SEC,
+      });
       if (!v.ok) return new Response(`unauthorized: ${v.reason ?? ""}`, { status: 401 });
 
-      let manifest;
-      try { manifest = parseManifest(JSON.parse(body)); }
-      catch (e) { return new Response(`bad manifest: ${e}`, { status: 422 }); }
+      let manifest: Manifest;
+      try {
+        manifest = parseManifest(JSON.parse(body));
+      } catch (e) {
+        return new Response(`bad manifest: ${e}`, { status: 422 });
+      }
       if (manifest.account !== account) return new Response("account mismatch", { status: 422 });
 
       const { stored } = await putManifestCas(env.MANIFESTS, manifest);
@@ -65,7 +76,14 @@ export default {
 
     const ts = Number(req.headers.get("X-Fanout-Timestamp"));
     const sig = req.headers.get("X-Fanout-Signature") ?? "";
-    const v = await verifyHmac({ secret, timestamp: ts, body, signature: sig, now, windowSec: HMAC_WINDOW_SEC });
+    const v = await verifyHmac({
+      secret,
+      timestamp: ts,
+      body,
+      signature: sig,
+      now,
+      windowSec: HMAC_WINDOW_SEC,
+    });
     if (!v.ok) return new Response(`unauthorized: ${v.reason ?? ""}`, { status: 401 });
 
     await env.PARENT.create({ params: { runId } });

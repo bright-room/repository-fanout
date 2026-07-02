@@ -1,5 +1,5 @@
-import { expect, test } from "vitest";
 import { GitHubClient } from "@repository-fanout/core";
+import { expect, test } from "vitest";
 import { actualReader, templateSource } from "../src/github.js";
 
 /** GitHub Contents API 風のレスポンスを返す fake fetch を作る */

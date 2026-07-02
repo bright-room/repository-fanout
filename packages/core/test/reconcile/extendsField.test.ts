@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { mergeExtends, applyExtendsField, RenovateParseError } from "../../src/reconcile/extendsField.js";
+import {
+  applyExtendsField,
+  mergeExtends,
+  RenovateParseError,
+} from "../../src/reconcile/extendsField.js";
 
 const managed = ["github>o/renovate-config", "github>o/renovate-config:typescript"];
 const universe = [
@@ -29,11 +33,15 @@ test("applyExtendsField returns null when semantically equal (no-op, formatting 
 });
 
 test("applyExtendsField rewrites only extends, preserving other keys", () => {
-  const actual = JSON.stringify({
-    $schema: "s",
-    extends: ["github>o/renovate-config"],
-    packageRules: [{ matchPackageNames: ["x"], enabled: false }],
-  }, null, 2);
+  const actual = JSON.stringify(
+    {
+      $schema: "s",
+      extends: ["github>o/renovate-config"],
+      packageRules: [{ matchPackageNames: ["x"], enabled: false }],
+    },
+    null,
+    2,
+  );
   const out = applyExtendsField(actual, managed, universe)!;
   const parsed = JSON.parse(out);
   expect(parsed.extends).toEqual(managed);
@@ -42,7 +50,9 @@ test("applyExtendsField rewrites only extends, preserving other keys", () => {
 });
 
 test("applyExtendsField throws RenovateParseError on invalid json", () => {
-  expect(() => applyExtendsField("// json5 comment\n{}", managed, universe)).toThrow(RenovateParseError);
+  expect(() => applyExtendsField("// json5 comment\n{}", managed, universe)).toThrow(
+    RenovateParseError,
+  );
 });
 
 test("applyExtendsField preserves a bare-string repo-own extends (appended after managed)", () => {

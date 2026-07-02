@@ -1,8 +1,8 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { createAppJwt, listInstallations } from "@repository-fanout/core";
+import type { Env } from "../index.js";
 import { getManifest, listManifests } from "../kv/manifestStore.js";
 import { recordRepoResult } from "../kv/runStore.js";
-import type { Env } from "../index.js";
 
 export interface ParentParams {
   runId: string;
@@ -18,12 +18,17 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
 
     const manifests = await step.do("load manifests", async () =>
       account
-        ? [await getManifest(this.env.MANIFESTS, account)].filter((m): m is NonNullable<typeof m> => m !== null)
+        ? [await getManifest(this.env.MANIFESTS, account)].filter(
+            (m): m is NonNullable<typeof m> => m !== null,
+          )
         : listManifests(this.env.MANIFESTS),
     );
 
     const installations = await step.do("list installations", async () => {
-      const jwt = await createAppJwt({ appId: this.env.APP_ID, privateKeyPem: this.env.APP_PRIVATE_KEY });
+      const jwt = await createAppJwt({
+        appId: this.env.APP_ID,
+        privateKeyPem: this.env.APP_PRIVATE_KEY,
+      });
       return listInstallations({ appJwt: jwt });
     });
     const instByAccount = new Map(installations.map((i) => [i.account, i]));
@@ -34,7 +39,10 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
         // installation 無し = アカウント単位 hard failure（spec §4 / §16-4）
         for (const repo of Object.keys(manifest.repositories)) {
           await recordRepoResult(this.env.RUNS, runId, {
-            account: manifest.account, repo, status: "failed", error: "no installation for account",
+            account: manifest.account,
+            repo,
+            status: "failed",
+            error: "no installation for account",
           });
         }
         continue;
@@ -46,15 +54,21 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
           await step.do(`spawn ${manifest.account}/${name}`, async () => {
             await this.env.CHILD.create({
               params: {
-                runId, account: manifest.account, installationId: inst.id,
+                runId,
+                account: manifest.account,
+                installationId: inst.id,
                 repo: `${manifest.account}/${name}`,
-                languages: entry.languages, vars: entry.vars, exclude: entry.exclude,
+                languages: entry.languages,
+                vars: entry.vars,
+                exclude: entry.exclude,
               },
             });
           });
         } catch (err) {
           await recordRepoResult(this.env.RUNS, runId, {
-            account: manifest.account, repo: name, status: "failed",
+            account: manifest.account,
+            repo: name,
+            status: "failed",
             error: `spawn failed: ${String(err)}`,
           });
         }

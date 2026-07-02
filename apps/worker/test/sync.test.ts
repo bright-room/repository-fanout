@@ -1,17 +1,24 @@
-import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test";
 import { expect, test } from "vitest";
-import worker from "../src/index.js";
 import { signHmac } from "../src/auth/hmac.js";
+import worker from "../src/index.js";
 import { getManifest } from "../src/kv/manifestStore.js";
 
 const manifest = {
-  account: "bright-room", revision: 1, sourceCommit: "c",
+  account: "bright-room",
+  revision: 1,
+  sourceCommit: "c",
   repositories: { r1: { languages: [], vars: {}, exclude: [] } },
 };
 
 // vitest-pool-workers can't bind Workflows, so stub PARENT/CHILD on the env.
 const created: Array<{ params?: unknown }> = [];
-const workflowStub = { create: async (opts?: { params?: unknown }) => { created.push(opts ?? {}); return {}; } };
+const workflowStub = {
+  create: async (opts?: { params?: unknown }) => {
+    created.push(opts ?? {});
+    return {};
+  },
+};
 const testEnv = () => ({ ...env, PARENT: workflowStub, CHILD: workflowStub });
 
 async function post(account: string, body: object, secret: string) {
@@ -19,10 +26,19 @@ async function post(account: string, body: object, secret: string) {
   const ts = Math.floor(Date.now() / 1000);
   const sig = await signHmac(secret, ts, raw);
   const ctx = createExecutionContext();
-  const res = await worker.fetch(new Request(`https://x/sync/${account}`, {
-    method: "POST", body: raw,
-    headers: { "X-Fanout-Timestamp": String(ts), "X-Fanout-Signature": sig, "Content-Type": "application/json" },
-  }), testEnv() as never, ctx);
+  const res = await worker.fetch(
+    new Request(`https://x/sync/${account}`, {
+      method: "POST",
+      body: raw,
+      headers: {
+        "X-Fanout-Timestamp": String(ts),
+        "X-Fanout-Signature": sig,
+        "Content-Type": "application/json",
+      },
+    }),
+    testEnv() as never,
+    ctx,
+  );
   await waitOnExecutionContext(ctx);
   return res;
 }
@@ -86,7 +102,7 @@ test("global sync with bad signature rejected 401", async () => {
 test("global sync fails closed when global secret not configured", async () => {
   created.length = 0;
   const noGlobal: Record<string, unknown> = { ...testEnv() };
-  delete noGlobal["SYNC_HMAC_SECRET___global"];
+  delete noGlobal.SYNC_HMAC_SECRET___global;
   // even a 'valid' signature against some secret must be rejected when unconfigured
   const res = await postGlobal("globalsecret", noGlobal);
   expect(res.status).toBe(401);

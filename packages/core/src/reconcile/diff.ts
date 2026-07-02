@@ -1,6 +1,6 @@
+import type { DesiredEntry } from "../templates/types.js";
 import { applyManagedBlock } from "./block.js";
 import { applyExtendsField } from "./extendsField.js";
-import type { DesiredEntry } from "../templates/types.js";
 
 export interface FileChange {
   path: string;

@@ -1,0 +1,37 @@
+name: Security
+
+# 依存関係の脆弱性スキャン。pnpm-lock.yaml の依存ツリーを OSV データベースと照合し、
+# 既知の脆弱性が見つかったらジョブを fail させる。
+# public リポジトリは Actions 無料のため paths フィルタはかけず、全 PR で実行する。
+
+on:
+  pull_request:
+
+# 最小権限: スキャンはチェックアウトしたソースの読み取りのみ。
+permissions:
+  contents: read
+
+# 同一 ref 上の古い実行はキャンセルして実行を整理する。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  osv-scan:
+    name: OSV vulnerability scan
+    # OSV-Scanner は Docker action として配布されているため Linux で実行する必要がある。
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Run OSV-Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+        with:
+          # --recursive で lockfile (pnpm-lock.yaml) を自動検出する。
+          # --config は ignore ポリシー（osv-scanner.toml 参照）を適用する。
+          # 無視されていない脆弱性が見つかると非ゼロ終了（ジョブ fail）。
+          scan-args: |-
+            --config=osv-scanner.toml
+            --recursive
+            ./

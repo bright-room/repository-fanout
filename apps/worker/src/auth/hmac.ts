@@ -14,7 +14,11 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
 
 export async function signHmac(secret: string, timestamp: number, body: string): Promise<string> {
   const key = await hmacKey(secret);
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${timestamp}.${body}`),
+  );
   return toHex(sig);
 }
 
@@ -34,9 +38,13 @@ export interface VerifyArgs {
   windowSec: number;
 }
 
-export async function verifyHmac(a: VerifyArgs): Promise<{ ok: true } | { ok: false; reason?: string }> {
+export async function verifyHmac(
+  a: VerifyArgs,
+): Promise<{ ok: true } | { ok: false; reason?: string }> {
   if (!Number.isFinite(a.timestamp)) return { ok: false, reason: "stale" };
   if (Math.abs(a.now - a.timestamp) > a.windowSec) return { ok: false, reason: "stale" };
   const expected = await signHmac(a.secret, a.timestamp, a.body);
-  return timingSafeEqual(expected, a.signature) ? { ok: true } : { ok: false, reason: "bad-signature" };
+  return timingSafeEqual(expected, a.signature)
+    ? { ok: true }
+    : { ok: false, reason: "bad-signature" };
 }

@@ -18,7 +18,8 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOpts): Promi
       lastErr = err;
       const retryable = err instanceof GitHubError && err.class === "retryable";
       if (!retryable || attempt === opts.maxAttempts) throw err;
-      const retryAfterMs = err instanceof GitHubError && err.retryAfter ? err.retryAfter * 1000 : undefined;
+      const retryAfterMs =
+        err instanceof GitHubError && err.retryAfter ? err.retryAfter * 1000 : undefined;
       const backoff = Math.min(cap, base * 2 ** (attempt - 1));
       await opts.sleep(retryAfterMs ?? backoff);
     }

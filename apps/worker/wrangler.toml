@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "MANIFESTS"
-id = "PLACEHOLDER_CREATE_WITH_wrangler_kv_namespace_create"
+id = "950aa4e7da824aba818906bbfaf03873"
 
 [[kv_namespaces]]
 binding = "RUNS"

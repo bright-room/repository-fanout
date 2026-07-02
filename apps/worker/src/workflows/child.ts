@@ -1,7 +1,7 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import {
   GitHubClient, GitHubError, createAppJwt, createInstallationToken,
-  resolveDesiredFiles, computeChanges, decideBranchAction,
+  resolveDesiredEntries, computeChanges, decideBranchAction, RenovateParseError,
   type PrState,
 } from "@repository-fanout/core";
 import { GitHubTemplateSource } from "../github/templateSource.js";
@@ -27,7 +27,7 @@ export interface ChildParams {
   account: string;
   installationId: number;
   repo: string;            // "owner/name"
-  profiles: string[];
+  languages: string[];
   vars: Record<string, string>;
   exclude: string[];
 }
@@ -48,12 +48,26 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
       const templates = new GitHubTemplateSource({ client, repo: this.env.TEMPLATES_REPO });
 
       const desired = await step.do("resolve desired", async () =>
-        retry(() => resolveDesiredFiles({ source: templates, profiles: p.profiles, vars: p.vars, exclude: p.exclude })),
+        retry(() => resolveDesiredEntries({ source: templates, languages: p.languages, vars: p.vars, exclude: p.exclude })),
       );
 
       const base = await step.do("default branch", () => retry(() => io.getDefaultBranch()));
       const actual = await step.do("read actual", () => retry(() => io.readActualFiles(desired.map((d) => d.path), base.branch)));
-      const changes = computeChanges(desired, actual);
+
+      let changes;
+      try {
+        changes = computeChanges(desired, actual);
+      } catch (err) {
+        if (err instanceof RenovateParseError) {
+          // パース不能な renovate.json はリトライ無意味な恒久エラー。
+          // failed を記録して静かに終える（exclude で自前管理に逃がす運用）。
+          await recordRepoResult(this.env.RUNS, p.runId, {
+            account: p.account, repo: p.repo, status: "failed", error: err.message,
+          });
+          return;
+        }
+        throw err;
+      }
 
       const pr = await step.do("find pr", () => retry(() => io.findPr(BRANCH)));
       const branchExists = await step.do("branch exists", () => retry(() => io.branchExists(BRANCH)));

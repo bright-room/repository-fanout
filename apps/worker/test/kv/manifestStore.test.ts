@@ -4,7 +4,7 @@ import { putManifestCas, getManifest, listManifests } from "../../src/kv/manifes
 
 const m = (rev: number) => ({
   account: "bright-room", revision: rev, sourceCommit: "c",
-  repositories: { r: { profiles: [], vars: {}, exclude: [] } },
+  repositories: { r: { languages: [], vars: {}, exclude: [] } },
 });
 
 test("putManifestCas stores and getManifest reads back", async () => {

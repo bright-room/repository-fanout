@@ -48,7 +48,7 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
               params: {
                 runId, account: manifest.account, installationId: inst.id,
                 repo: `${manifest.account}/${name}`,
-                profiles: entry.profiles, vars: entry.vars, exclude: entry.exclude,
+                languages: entry.languages, vars: entry.vars, exclude: entry.exclude,
               },
             });
           });

@@ -68,6 +68,26 @@ test("managed-block entries compose block content (vars + language lines)", asyn
   expect(co.blockContent).toBe("* @o/team");
 });
 
+test("composed replacements insert $ patterns literally (no $&/$$ expansion)", async () => {
+  const src = memorySource({
+    files: {
+      "base/files/.gitignore": "{{gitignore}}\n",
+      "base/files/renovate.json": '{\n  "extends": [{{renovate_extends}}]\n}\n',
+    },
+    fragments: {
+      base: { renovate: ["github>o/rc$&x", "a$$b"], gitignore: ["cache$&junk", "a$$b", "x$`y"] },
+    },
+    languages: [],
+  });
+  const entries = await resolveDesiredEntries({ source: src, languages: [], vars: {}, exclude: [] });
+  const gi = entries.find((e) => e.path === ".gitignore")!;
+  if (gi.strategy !== "managed-block") throw new Error("wrong strategy");
+  expect(gi.blockContent).toBe("cache$&junk\na$$b\nx$`y");
+  const r = entries.find((e) => e.path === "renovate.json")!;
+  if (r.strategy !== "extends-field") throw new Error("wrong strategy");
+  expect(r.createContent).toBe('{\n  "extends": ["github>o/rc$&x", "a$$b"]\n}\n');
+});
+
 test("language files are included; unknown language throws; collision throws; exclude removes", async () => {
   const withTs = await resolveDesiredEntries({ source: source(), languages: ["typescript"], vars: {}, exclude: [] });
   expect(withTs.find((e) => e.path === ".editorconfig")?.strategy).toBe("replace");

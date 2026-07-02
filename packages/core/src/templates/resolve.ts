@@ -73,13 +73,14 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
       let entry: DesiredEntry;
       const special = seeds ? undefined : STRATEGY_REGISTRY[dest];
       if (special === "extends-field") {
+        // 関数置換で $ パターン（$&, $$, $`, $n 等）の展開を避け、値を逐語挿入する。
         const createContent = substituteVars(
-          raw.replace("{{renovate_extends}}", managedExtends.map((e) => JSON.stringify(e)).join(", ")),
+          raw.replace("{{renovate_extends}}", () => managedExtends.map((e) => JSON.stringify(e)).join(", ")),
           args.vars,
         );
         entry = { strategy: "extends-field", path: dest, managedExtends, universe, createContent };
       } else if (special === "managed-block") {
-        const rendered = substituteVars(raw.replace("{{gitignore}}", gitignoreBlock), args.vars);
+        const rendered = substituteVars(raw.replace("{{gitignore}}", () => gitignoreBlock), args.vars);
         entry = { strategy: "managed-block", path: dest, blockContent: rendered.replace(/\n$/, "") };
       } else {
         const content = substituteVars(raw, args.vars);

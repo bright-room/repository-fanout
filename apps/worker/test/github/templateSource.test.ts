@@ -18,7 +18,7 @@ test("listFiles filters tree by prefix", async () => {
     "/git/trees/HEAD?recursive=1": { tree: [
       { path: "base/files/renovate.json", type: "blob" },
       { path: "base/files/.github/CODEOWNERS", type: "blob" },
-      { path: "profiles/terraform/profile.json", type: "blob" },
+      { path: "languages/terraform/fragment.json", type: "blob" },
     ] },
   });
   const src = new GitHubTemplateSource({ client, repo: "o/c" });

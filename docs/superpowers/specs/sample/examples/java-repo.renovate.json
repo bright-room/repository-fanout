@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>bright-room/common-files//presets/default"
+    "github>bright-room/renovate-config",
+    "github>bright-room/renovate-config:java"
   ]
 }

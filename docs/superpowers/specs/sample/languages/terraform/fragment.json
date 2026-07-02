@@ -1,5 +1,5 @@
 {
-  "renovate": ["github>bright-room/common-files//presets/terraform"],
+  "renovate": ["github>bright-room/renovate-config:terraform"],
   "gitignore": [
     "# terraform",
     ".terraform/",

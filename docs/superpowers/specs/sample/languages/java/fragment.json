@@ -1,0 +1,4 @@
+{
+  "_comment": "java preset は renovate-config 側で group:springBoot を内包（framework 軸は fanout に持たない）。",
+  "renovate": ["github>bright-room/renovate-config:java"]
+}

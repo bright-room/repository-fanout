@@ -1,8 +1,0 @@
-{
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "github>bright-room/common-files//presets/default",
-    "github>bright-room/common-files//presets/typescript",
-    "group:springBoot"
-  ]
-}

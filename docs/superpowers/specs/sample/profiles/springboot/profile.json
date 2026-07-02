@@ -1,4 +1,0 @@
-{
-  "_comment": "renovate 組み込み preset だけ足す profile。配布ファイルは無いので files/ も無し。",
-  "renovate": ["group:springBoot"]
-}

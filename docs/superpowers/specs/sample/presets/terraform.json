@@ -1,7 +1,0 @@
-{
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Terraform リポ向けの追加設定（現状 organization-structure の renovate.json に直書きされていた terraform ブロックをここに分離）",
-  "terraform": {
-    "enabled": true
-  }
-}

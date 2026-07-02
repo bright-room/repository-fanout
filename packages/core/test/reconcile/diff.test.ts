@@ -52,3 +52,10 @@ test("extends-field: invalid json propagates RenovateParseError", () => {
   expect(() => computeChanges([entries[3]!], { "renovate.json": "{ json5: true, }" }))
     .toThrow(RenovateParseError);
 });
+
+test("extends-field: non-object top-level json propagates RenovateParseError", () => {
+  for (const bad of ["null", "123", '"str"', "[1,2]"]) {
+    expect(() => computeChanges([entries[3]!], { "renovate.json": bad }))
+      .toThrow(RenovateParseError);
+  }
+});

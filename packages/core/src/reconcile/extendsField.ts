@@ -30,15 +30,22 @@ export function applyExtendsField(
   managed: string[],
   universe: string[],
 ): string | null {
-  let parsed: Record<string, unknown>;
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(actualContent) as Record<string, unknown>;
+    parsed = JSON.parse(actualContent);
   } catch (e) {
     throw new RenovateParseError(e);
   }
-  const actualExtends = Array.isArray(parsed.extends) ? (parsed.extends as unknown[]).map(String) : [];
+  // トップレベルが object でない（null / 配列 / プリミティブ）renovate.json は不正。
+  // ここで弾かないと null→try 外の TypeError（RenovateParseError を逃す）、
+  // 配列→managed を黙って握り潰す、等の破損を招く。
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new RenovateParseError(new Error("renovate.json top-level must be a JSON object"));
+  }
+  const obj = parsed as Record<string, unknown>;
+  const actualExtends = Array.isArray(obj.extends) ? (obj.extends as unknown[]).map(String) : [];
   const next = mergeExtends(actualExtends, managed, universe);
   if (next.length === actualExtends.length && next.every((v, i) => v === actualExtends[i])) return null;
-  parsed.extends = next; // JSON.parse は挿入順を保持。既存キー位置は維持される
-  return `${JSON.stringify(parsed, null, 2)}\n`;
+  obj.extends = next; // JSON.parse は挿入順を保持。既存キー位置は維持される
+  return `${JSON.stringify(obj, null, 2)}\n`;
 }

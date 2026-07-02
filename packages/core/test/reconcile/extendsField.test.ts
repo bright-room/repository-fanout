@@ -44,3 +44,9 @@ test("applyExtendsField rewrites only extends, preserving other keys", () => {
 test("applyExtendsField throws RenovateParseError on invalid json", () => {
   expect(() => applyExtendsField("// json5 comment\n{}", managed, universe)).toThrow(RenovateParseError);
 });
+
+test("applyExtendsField throws RenovateParseError on non-object top-level json", () => {
+  for (const bad of ["null", "123", '"str"', "[1,2]"]) {
+    expect(() => applyExtendsField(bad, managed, universe)).toThrow(RenovateParseError);
+  }
+});

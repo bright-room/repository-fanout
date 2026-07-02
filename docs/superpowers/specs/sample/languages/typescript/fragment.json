@@ -1,5 +1,5 @@
 {
-  "_comment": "renovate の extends エントリ・gitignore 行・配布ファイル(files/) を1つの profile に集約した例。",
+  "_comment": "renovate の extends エントリ・gitignore 行・配布ファイル(files/) を1つの language に集約した例。",
   "renovate": ["github>bright-room/renovate-config:typescript"],
   "gitignore": [
     "# node",

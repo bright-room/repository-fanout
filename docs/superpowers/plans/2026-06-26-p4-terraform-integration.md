@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** structure リポ（`organization-structure` / `kukv/structure`）の repository モジュールに `profiles` / `fanout_vars` を追加し、`fanout_manifest` を出力、on-merge CI で manifest を生成して fanout `POST /sync/{account}`（HMAC 署名）する。
+**Goal:** structure リポ（`organization-structure` / `kukv/structure`）の repository モジュールに `languages` / `fanout_vars` を追加し、`fanout_manifest` を出力、on-merge CI で manifest を生成して fanout `POST /sync/{account}`（HMAC 署名）する。
 
 **Architecture:** spec §3・§6・§16-1。manifest は git に置かず、apply 後に CI が `terraform output` で生成し HMAC 署名して fanout へ送信。`terraform output` が空/不在なら CI を hard fail。
 
@@ -12,7 +12,7 @@
 
 ---
 
-## Task 1: repository モジュールに profiles / fanout_vars を追加
+## Task 1: repository モジュールに languages / fanout_vars を追加
 
 **Files:**
 - Modify: `<structure>/terraform/modules/repository/variables.tf`
@@ -22,8 +22,8 @@
 
 `modules/repository/variables.tf` に追記:
 ```hcl
-variable "profiles" {
-  description = "repository-fanout が配布する profile タグ（言語/FW/capability）"
+variable "languages" {
+  description = "repository-fanout が配布に使うリポの構成言語（renovate-config の preset 名と 1:1）"
   type        = list(string)
   default     = []
 }
@@ -46,7 +46,7 @@ output "name" {
 output "fanout_entry" {
   description = "fanout manifest の1リポ分エントリ"
   value = {
-    profiles = var.profiles
+    languages = var.languages
     vars     = var.fanout_vars
   }
 }
@@ -61,7 +61,7 @@ Expected: Success
 
 ```bash
 git add modules/repository/variables.tf modules/repository/outputs.tf
-git commit -m "feat: add profiles/fanout_vars to repository module"
+git commit -m "feat: add languages/fanout_vars to repository module"
 ```
 
 ---
@@ -75,7 +75,7 @@ git commit -m "feat: add profiles/fanout_vars to repository module"
 
 `organization-structure/terraform/_fanout_manifest.tf`:
 ```hcl
-# fanout 配布対象（profiles を持つ repo のみ）を集約。
+# fanout 配布対象（languages を持つ repo のみ）を集約。
 # 注：repo を増やしたらここにも1行追加する（spec §3 実装メモ）。
 locals {
   fanout_modules = {
@@ -87,7 +87,7 @@ locals {
   fanout_repositories = {
     for name, mod in local.fanout_modules :
     name => mod.fanout_entry
-    if length(mod.fanout_entry.profiles) > 0
+    if length(mod.fanout_entry.languages) > 0
   }
 }
 
@@ -102,18 +102,18 @@ output "fanout_manifest" {
 
 > kukv/structure は `account = "kukv"` で同様に作る。
 
-- [ ] **Step 2: 各 repo モジュールに profiles を付与**
+- [ ] **Step 2: 各 repo モジュールに languages を付与**
 
 例 `repository_endpoint-gate.tf` に追記:
 ```hcl
-  profiles    = ["terraform"]
+  languages   = ["terraform"]
   fanout_vars = { codeowner = "bright-room/br-maintainers" }
 ```
 
 - [ ] **Step 3: plan で manifest output を確認**
 
 Run: `terraform plan` → `terraform output -json fanout_manifest`（apply 後）で内容確認。
-Expected: `{ "account": "bright-room", "repositories": { "endpoint-gate": { "profiles": ["terraform"], "vars": {...} } } }`
+Expected: `{ "account": "bright-room", "repositories": { "endpoint-gate": { "languages": ["terraform"], "vars": {...} } } }`
 
 - [ ] **Step 4: Commit**
 
@@ -249,7 +249,7 @@ git commit -am "feat: fanout integration for kukv/structure"
 
 ## Task 6: E2E 検証
 
-- [ ] **Step 1:** organization-structure で1リポに `profiles=["terraform"]` を付けて PR→merge
+- [ ] **Step 1:** organization-structure で1リポに `languages=["terraform"]` を付けて PR→merge
 - [ ] **Step 2:** on-merge CI が `/sync/bright-room` を 202 で受理することを確認
 - [ ] **Step 3:** 対象リポに PR（renovate.json/CODEOWNERS/release.yml/.gitignore）が作成されることを確認
 - [ ] **Step 4:** 再 merge で **新規 PR が増えない**（CAS で stale 拒否 or no-op）ことを確認

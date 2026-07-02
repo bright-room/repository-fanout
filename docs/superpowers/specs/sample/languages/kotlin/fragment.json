@@ -1,0 +1,4 @@
+{
+  "_comment": "kotlin preset は renovate-config 側で group:kotlinMonorepo / group:springBoot を内包。",
+  "renovate": ["github>bright-room/renovate-config:kotlin"]
+}

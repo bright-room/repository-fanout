@@ -5,7 +5,7 @@
 
 ## renovate.json（json-field: extends）
 
-対象リポ: `profiles: ["java"]` → `["java", "typescript"]` に変更（フロントエンド追加）。
+対象リポ: `languages: ["java"]` → `["java", "typescript"]` に変更（フロントエンド追加）。
 リポは独自キー（packageRules）と独自 extends エントリ（`:enablePreCommit`）を持っている。
 
 **before（リポの現状）**
@@ -14,6 +14,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>bright-room/renovate-config",
+    "github>bright-room/renovate-config:java",
     ":enablePreCommit"
   ],
   "packageRules": [
@@ -29,6 +30,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>bright-room/renovate-config",
+    "github>bright-room/renovate-config:java",
     "github>bright-room/renovate-config:typescript",
     ":enablePreCommit"
   ],
@@ -40,13 +42,13 @@
 ```
 
 - 変わったのは extends に `:typescript` が入っただけ。
-- `:enablePreCommit` は universe（base∪全 profile の貢献集合）外＝**リポ独自エントリなので温存**され、管理分の**後ろ**に置かれる（renovate は後勝ちマージ＝リポ優先）。
+- `:enablePreCommit` は universe（base∪全 language の貢献集合）外＝**リポ独自エントリなので温存**され、管理分の**後ろ**に置かれる（renovate は後勝ちマージ＝リポ優先）。
 - `packageRules` / `ignorePaths` 等の他キーは**不可侵**。
 - スタック転換（`["typescript"]` → `["kotlin"]`）なら `:typescript` が `:kotlin` に置き換わるだけ。
 
 ## .gitignore（managed-block）
 
-対象リポ: `profiles: ["typescript"]`。リポは独自エントリを既に持っている。
+対象リポ: `languages: ["typescript"]`。リポは独自エントリを既に持っている。
 
 **before**
 ```
@@ -80,7 +82,7 @@ coverage/
 ```
 
 - ブロックを**先頭に挿入**し、既存内容はそのまま下に温存（重複 `node_modules/` は gitignore 的に無害。掃除するかはリポの自由＝ブロック外は以後 fanout が触らない）。
-- 以後の更新（profile 追加等）は**ブロック内だけ**が変わる。
+- 以後の更新（language 追加等）は**ブロック内だけ**が変わる。
 
 ## .github/CODEOWNERS（managed-block）
 

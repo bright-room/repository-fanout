@@ -1,0 +1,15 @@
+{
+  "_comment": "base = 全リポに常時適用される言語非依存の単位。renovate は管理する extends エントリ（preset 本体は bright-room/renovate-config）、gitignore は managed-block に入る行。",
+  "renovate": ["github>bright-room/renovate-config"],
+  "gitignore": [
+    "# OS / editor",
+    ".DS_Store",
+    "Thumbs.db",
+    ".idea/",
+    ".vscode/",
+    "",
+    "# env",
+    ".env",
+    ".env.local"
+  ]
+}

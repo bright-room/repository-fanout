@@ -1,4 +1,0 @@
-{
-  "_comment": "renovate 組み込み preset だけ足す profile（java + Spring Boot 用）。renovate-config の kotlin.json は既に group:springBoot を extends しているため、kotlin リポにこの profile は不要。",
-  "renovate": ["group:springBoot"]
-}

@@ -1,21 +1,17 @@
 name: Security
 
 # 依存関係の脆弱性スキャン。pnpm-lock.yaml の依存ツリーを OSV データベースと照合し、
-# 既知の脆弱性が見つかったらジョブを fail させる。lockfile（またはこのワークフロー /
-# ignore ポリシー）が変わったときだけ動くので、依存に触れない PR では CI 時間を消費しない。
+# 既知の脆弱性が見つかったらジョブを fail させる。
+# public リポジトリは Actions 無料のため paths フィルタはかけず、全 PR で実行する。
 
 on:
   pull_request:
-    paths:
-      - "pnpm-lock.yaml"
-      - "osv-scanner.toml"
-      - ".github/workflows/security.yml"
 
 # 最小権限: スキャンはチェックアウトしたソースの読み取りのみ。
 permissions:
   contents: read
 
-# 同一 ref 上の古い実行はキャンセルして CI 時間を節約する。
+# 同一 ref 上の古い実行はキャンセルして実行を整理する。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

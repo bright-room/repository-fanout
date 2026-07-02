@@ -47,7 +47,7 @@ test("planRepo merges managed block with existing repo content", async () => {
   const src: TemplateSource = {
     async readFile(p) { return p === "base/files/.gitignore" ? "{{gitignore}}\n" : null; },
     async listFiles(prefix) { return prefix === "base/files/" ? ["base/files/.gitignore"] : []; },
-    async readFragmentManifest(dir) { return dir === "base" ? { gitignore: ["a"] } : null; },
+    async readFragmentManifest(dir) { return dir === "base" ? { gitignore: [{ ignores: ["a"] }] } : null; },
     async listLanguages() { return []; },
     async languageExists() { return true; },
   };

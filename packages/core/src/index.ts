@@ -8,7 +8,7 @@ export { parseManifest, isNewerRevision } from "./manifest/parse.js";
 export type { Manifest, RepoEntry } from "./manifest/types.js";
 export { resolveDesiredEntries } from "./templates/resolve.js";
 export { renderGitignore, substituteVars } from "./templates/render.js";
-export type { TemplateSource, FragmentManifest, DesiredEntry } from "./templates/types.js";
+export type { TemplateSource, FragmentManifest, GitignoreSection, DesiredEntry } from "./templates/types.js";
 export { computeChanges } from "./reconcile/diff.js";
 export type { FileChange } from "./reconcile/diff.js";
 export { applyManagedBlock, BLOCK_START, BLOCK_END } from "./reconcile/block.js";

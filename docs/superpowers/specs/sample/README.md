@@ -51,13 +51,15 @@ common-files/                          （= テンプレ専用リポのルート
 
 ### fragment.json の役割
 
-`files/` に静的に置けない「合成が必要な貢献」を宣言する。今は renovate（extends エントリ）と gitignore（ブロック行）：
+`files/` に静的に置けない「合成が必要な貢献」を宣言する。今は renovate（extends エントリ）と gitignore（セクション＝見出しラベル + 無視パターン。`section_comment` には `#` を書かない — 描画時に `# ` が自動付与される）：
 
 ```json
 // languages/terraform/fragment.json
 {
   "renovate": ["github>bright-room/renovate-config:terraform"],
-  "gitignore": ["# terraform", ".terraform/", "*.tfstate", "..."]
+  "gitignore": [
+    { "section_comment": "terraform", "ignores": [".terraform/", "*.tfstate", "..."] }
+  ]
 }
 ```
 
@@ -84,7 +86,7 @@ common-files/                          （= テンプレ専用リポのルート
 
 ## managed-block（.gitignore / CODEOWNERS）の描画ルール
 
-- ブロックの中身 = base テンプレ（`{{var}}` 置換）＋ language 貢献の合成（gitignore は行配列を連結・順序保持 dedup）。
+- ブロックの中身 = base テンプレ（`{{var}}` 置換）＋ language 貢献の合成（gitignore はセクションを連結。各セクションは見出しコメント + 無視パターン、セクション間は空行1つで区切る。無視パターンは横断で順序保持 dedup し、除去で空になったセクションは見出しごと省く）。
 - **ブロックはファイル先頭**。両形式とも**後勝ち**なので、ブロックより下のリポ独自ルールが常に優先＝fanout はリポの個別指定（CODEOWNERS のパス別ルール、gitignore の `!` 再包含等）を上書きできない。
 - 実ファイルにブロックあり→中身だけ差し替え／なし→先頭に挿入（既存内容は下に温存）／ファイルなし→ブロックのみで新規作成。同一なら no-op。
 

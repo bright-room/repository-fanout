@@ -69,6 +69,7 @@ Thumbs.db
 # env
 .env
 .env.local
+
 # node
 node_modules/
 dist/

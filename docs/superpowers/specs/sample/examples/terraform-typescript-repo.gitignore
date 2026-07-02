@@ -8,12 +8,14 @@ Thumbs.db
 # env
 .env
 .env.local
+
 # terraform
 .terraform/
 *.tfstate
 *.tfstate.*
 crash.log
 *.tfvars
+
 # node
 node_modules/
 dist/

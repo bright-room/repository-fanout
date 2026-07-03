@@ -82,6 +82,19 @@ describe("runParent wiring", () => {
     expect(JSON.parse(raw ?? "{}")).toMatchObject({ status: "failed" });
   });
 
+  it("installation login case differs from manifest account → still spawns (大文字小文字不整合)", async () => {
+    await env.MANIFESTS.put("manifest:Acc", JSON.stringify(manifest("Acc", ["r1"])));
+    const created: Array<{ params: { repo: string; account: string } }> = [];
+    const testEnv = { ...env, CHILD: { create: async (a: never) => void created.push(a) } };
+    await runParent(testEnv as never, { runId: "run-1", account: "Acc" }, fakeStep(), {
+      listInstallations: async () => [inst("acc", 42)],
+    });
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({
+      params: { runId: "run-1", account: "Acc", repo: "Acc/r1", installationId: 42 },
+    });
+  });
+
   it("spawn failure does not stop the run", async () => {
     await env.MANIFESTS.put("manifest:acc", JSON.stringify(manifest("acc", ["bad", "good"])));
     const created: Array<{ params: { repo: string } }> = [];

@@ -44,7 +44,10 @@ export async function runParent(
     const jwt = await createAppJwt({ appId: env.APP_ID, privateKeyPem: env.APP_PRIVATE_KEY });
     return listInstallations({ appJwt: jwt });
   });
-  const instByAccount = new Map(installations.map((i) => [i.account, i]));
+  // account 照合は大文字小文字を無視する(manifest の account と installation の
+  // login で表記が食い違うことがあるため)。KV キーや spawn params には manifest
+  // 側の表記をそのまま使う(影響を照合ロジックのみに限定)。
+  const instByAccount = new Map(installations.map((i) => [i.account.toLowerCase(), i]));
 
   interface SpawnItem {
     account: string;
@@ -60,7 +63,7 @@ export async function runParent(
   const items: SpawnItem[] = [];
 
   for (const manifest of manifests) {
-    const inst = instByAccount.get(manifest.account);
+    const inst = instByAccount.get(manifest.account.toLowerCase());
     const names = Object.keys(manifest.repositories).filter(
       (name) => !repos || repos.includes(name),
     );

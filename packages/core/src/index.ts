@@ -9,6 +9,8 @@ export {
   parseRateLimitRemaining,
   parseRetryAfter,
 } from "./github/errors.js";
+export type { PrInfo, RepoIOOpts } from "./github/repoIO.js";
+export { RepoIO } from "./github/repoIO.js";
 export { isNewerRevision, parseManifest } from "./manifest/parse.js";
 export type { Manifest, RepoEntry } from "./manifest/types.js";
 export {
@@ -35,4 +37,5 @@ export type {
   GitignoreSection,
   TemplateSource,
 } from "./templates/types.js";
+export { decodeBase64Utf8 } from "./util/base64.js";
 export { sha256Hex } from "./util/hash.js";

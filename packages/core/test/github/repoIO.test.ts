@@ -1,5 +1,5 @@
-import { GitHubClient } from "@repository-fanout/core";
 import { expect, test, vi } from "vitest";
+import { GitHubClient } from "../../src/github/client.js";
 import { RepoIO } from "../../src/github/repoIO.js";
 
 function client(map: Record<string, unknown>, notFound: string[] = []): GitHubClient {

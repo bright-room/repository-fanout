@@ -9,10 +9,10 @@ import {
   GitHubError,
   type PrState,
   RenovateParseError,
+  RepoIO,
   resolveDesiredEntries,
 } from "@repository-fanout/core";
 import { reportRepoFailure } from "../failure.js";
-import { RepoIO } from "../github/repoIO.js";
 import { GitHubTemplateSource } from "../github/templateSource.js";
 import type { Env } from "../index.js";
 import { recordRepoResult } from "../kv/runStore.js";

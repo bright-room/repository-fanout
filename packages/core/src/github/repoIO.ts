@@ -1,5 +1,6 @@
-import type { FileChange, GitHubClient } from "@repository-fanout/core";
-import { decodeBase64Utf8 } from "./base64.js";
+import type { FileChange } from "../reconcile/diff.js";
+import { decodeBase64Utf8 } from "../util/base64.js";
+import type { GitHubClient } from "./client.js";
 
 export interface RepoIOOpts {
   client: GitHubClient;

@@ -34,10 +34,23 @@ export function applyManagedBlock(actual: string | undefined, blockContent: stri
   }
   const blockText = `${BLOCK_START}\n${blockContent}\n${BLOCK_END}`;
   if (actual === undefined) return `${blockText}\n`;
+
+  // blockContent と完全一致する非空行は、これから managed ブロックが管理するので、
+  // マーカー外に（v0 や手動で）同じ行が残っていても取り除く（重複排除）。空行は対象外。
+  const managedLines = new Set(blockContent.split("\n").filter((l) => l !== ""));
+  const dropDup = (segment: string): string =>
+    segment
+      .split("\n")
+      .filter((l) => !managedLines.has(l))
+      .join("\n");
+
   const start = findMarkerLine(actual, BLOCK_START);
   const end = start === -1 ? -1 : findMarkerLine(actual, BLOCK_END, start + BLOCK_START.length);
   if (start !== -1 && end > start) {
-    return actual.slice(0, start) + blockText + actual.slice(end + BLOCK_END.length);
+    return (
+      dropDup(actual.slice(0, start)) + blockText + dropDup(actual.slice(end + BLOCK_END.length))
+    );
   }
-  return `${blockText}\n${actual}`;
+  const rest = dropDup(actual);
+  return rest === "" ? `${blockText}\n` : `${blockText}\n${rest}`;
 }

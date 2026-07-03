@@ -31,3 +31,19 @@ test("throws when block content itself contains a whole-line marker", () => {
   expect(() => applyManagedBlock(undefined, `a\n${BLOCK_END}\nb`)).toThrow(/marker/i);
   expect(() => applyManagedBlock("repo\n", `${BLOCK_START}\nx`)).toThrow(/marker/i);
 });
+
+test("drops an existing unmarked line that duplicates the managed block content", () => {
+  // v0 等が残した「これから管理する行」と同一の既存行は managed ブロックに集約する（重複させない）
+  expect(applyManagedBlock("* @team\n", "* @team")).toBe(`${block("* @team")}\n`);
+});
+
+test("keeps repo-own lines but drops ones duplicating the block content", () => {
+  expect(applyManagedBlock("* @team\n/docs @docs\n", "* @team")).toBe(
+    `${block("* @team")}\n/docs @docs\n`,
+  );
+});
+
+test("drops duplicate lines left outside the block on re-apply", () => {
+  const actual = `${block("* @team")}\n* @team\n`;
+  expect(applyManagedBlock(actual, "* @team")).toBe(`${block("* @team")}\n`);
+});

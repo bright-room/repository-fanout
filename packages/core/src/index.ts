@@ -26,3 +26,4 @@ export type {
   GitignoreSection,
   TemplateSource,
 } from "./templates/types.js";
+export { sha256Hex } from "./util/hash.js";

@@ -19,6 +19,8 @@ export { computeChanges } from "./reconcile/diff.js";
 export type { DistFileRecord, DistRecord, Distributed } from "./reconcile/distRecord.js";
 export { emptyDistRecord, parseDistRecord, recordDistribution } from "./reconcile/distRecord.js";
 export { applyExtendsField, mergeExtends, RenovateParseError } from "./reconcile/extendsField.js";
+export type { KeptFile, RetractionArgs, RetractionPlan } from "./reconcile/retraction.js";
+export { planRetraction } from "./reconcile/retraction.js";
 export { renderGitignore, substituteVars } from "./templates/render.js";
 export { resolveDesiredEntries } from "./templates/resolve.js";
 export type {

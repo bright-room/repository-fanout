@@ -2,19 +2,26 @@ import { expect, test } from "vitest";
 import { resolveDesiredEntries } from "../../src/templates/resolve.js";
 import type { FragmentManifest, TemplateSource } from "../../src/templates/types.js";
 
+const DEFAULT_STRATEGIES =
+  '{"renovate.json":"extends-field",".gitignore":"managed-block",".github/CODEOWNERS":"managed-block"}';
+
 function memorySource(opts: {
   files: Record<string, string>;
   fragments: Record<string, FragmentManifest>; // "base" | "languages/<lang>" | "bundles/<name>"
   languages: string[]; // 存在する language 一覧
   bundles?: string[]; // 存在する bundle 一覧
+  omitStrategies?: boolean; // strategies.json を配布しない（fail-fast 検証用）
 }): TemplateSource {
   const names = { languages: opts.languages, bundles: opts.bundles ?? [] };
+  const files: Record<string, string> = opts.omitStrategies
+    ? { ...opts.files }
+    : { "strategies.json": DEFAULT_STRATEGIES, ...opts.files };
   return {
     async readFile(p) {
-      return opts.files[p] ?? null;
+      return files[p] ?? null;
     },
     async listFiles(prefix) {
-      return Object.keys(opts.files).filter((p) => p.startsWith(prefix));
+      return Object.keys(files).filter((p) => p.startsWith(prefix));
     },
     async readFragmentManifest(dir) {
       return opts.fragments[dir] ?? null;
@@ -56,7 +63,7 @@ const source = () =>
     languages: ["terraform", "typescript", "java"],
   });
 
-test("strategies are assigned per path via registry", async () => {
+test("strategies are assigned per path via strategies.json", async () => {
   const entries = await resolveDesiredEntries({
     source: source(),
     languages: [],
@@ -247,4 +254,39 @@ test("unknown bundle throws; language/bundle file collision throws", async () =>
       exclude: [],
     }),
   ).rejects.toThrow(/collision/i);
+});
+
+test("missing strategies.json fails resolve (fail fast)", async () => {
+  const src = memorySource({
+    files: { "base/files/renovate.json": "{}\n" },
+    fragments: {},
+    languages: [],
+    omitStrategies: true,
+  });
+  await expect(
+    resolveDesiredEntries({ source: src, languages: [], bundles: [], vars: {}, exclude: [] }),
+  ).rejects.toThrow(/strategies\.json not found/i);
+});
+
+test("strategy mapping is data-driven: config assigns and unassigns without code change", async () => {
+  const src = memorySource({
+    files: {
+      "strategies.json": '{"NOTICE.md":"managed-block"}',
+      "base/files/NOTICE.md": "managed notice\n",
+      "base/files/renovate.json": "{}\n",
+    },
+    fragments: {},
+    languages: [],
+  });
+  const entries = await resolveDesiredEntries({
+    source: src,
+    languages: [],
+    bundles: [],
+    vars: {},
+    exclude: [],
+  });
+  const byPath = Object.fromEntries(entries.map((e) => [e.path, e]));
+  expect(byPath["NOTICE.md"]?.strategy).toBe("managed-block");
+  // map から外れたパスは既定の replace に戻る
+  expect(byPath["renovate.json"]?.strategy).toBe("replace");
 });

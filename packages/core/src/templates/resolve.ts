@@ -1,5 +1,6 @@
 import { dedupePreserveOrder } from "../util/dedupe.js";
 import { renderGitignore, substituteVars } from "./render.js";
+import { parseStrategyConfig } from "./strategyConfig.js";
 import type { DesiredEntry, FragmentManifest, TemplateSource } from "./types.js";
 
 export interface ResolveArgs {
@@ -9,13 +10,6 @@ export interface ResolveArgs {
   vars: Record<string, string>;
   exclude: string[];
 }
-
-/** パス → 特殊戦略。未登録の base/languages files は replace、seeds は create-only */
-const STRATEGY_REGISTRY: Record<string, "extends-field" | "managed-block"> = {
-  "renovate.json": "extends-field",
-  ".gitignore": "managed-block",
-  ".github/CODEOWNERS": "managed-block",
-};
 
 function destPath(fullPath: string): string {
   return fullPath
@@ -27,6 +21,9 @@ function destPath(fullPath: string): string {
 
 export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredEntry[]> {
   const { source } = args;
+
+  // 0. strategies.json（不在は fail fast。spec 2026-07-03 §3）
+  const strategies = parseStrategyConfig(await source.readFile("strategies.json"));
 
   // 1. 未知 language / bundle はエラー
   for (const lang of args.languages) {
@@ -80,7 +77,7 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
       if (raw === null) continue;
 
       let entry: DesiredEntry;
-      const special = seeds ? undefined : STRATEGY_REGISTRY[dest];
+      const special = seeds ? undefined : strategies[dest];
       if (special === "extends-field") {
         // 関数置換で $ パターン（$&, $$, $`, $n 等）の展開を避け、値を逐語挿入する。
         const createContent = substituteVars(

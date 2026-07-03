@@ -4,6 +4,7 @@ import { planRepo } from "../src/planRepo.js";
 
 const source: TemplateSource = {
   async readFile(p) {
+    if (p === "strategies.json") return '{"renovate.json":"extends-field"}';
     return p === "base/files/renovate.json" ? '{"extends":[{{renovate_extends}}]}' : null;
   },
   async listFiles(prefix) {
@@ -48,6 +49,7 @@ test("planRepo no-op when actual matches", async () => {
 test("planRepo merges managed block with existing repo content", async () => {
   const src: TemplateSource = {
     async readFile(p) {
+      if (p === "strategies.json") return '{".gitignore":"managed-block"}';
       return p === "base/files/.gitignore" ? "{{gitignore}}\n" : null;
     },
     async listFiles(prefix) {

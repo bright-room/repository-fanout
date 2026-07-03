@@ -6,7 +6,7 @@ export interface GitignoreSection {
   ignores: string[];
 }
 
-/** base/ または languages/<lang>/ の fragment.json */
+/** base/ または languages/<lang>/ または bundles/<name>/ の fragment.json */
 export interface FragmentManifest {
   /** renovate extends エントリ（renovate-config 参照 or 組み込み preset） */
   renovate?: string[];
@@ -14,16 +14,19 @@ export interface FragmentManifest {
   gitignore?: GitignoreSection[];
 }
 
+/** fragment を提供する宣言軸のディレクトリ名 */
+export type FragmentAxis = "languages" | "bundles";
+
 /** テンプレ専用リポからの読み取りを抽象化（worker/cli は GitHub 経由、test はメモリ） */
 export interface TemplateSource {
   readFile(path: string): Promise<string | null>;
   listFiles(prefix: string): Promise<string[]>;
-  /** `${dir}/fragment.json` を読む（"base" | "languages/<lang>"）。無ければ null */
+  /** `${dir}/fragment.json` を読む（"base" | "languages/<name>" | "bundles/<name>"）。無ければ null */
   readFragmentManifest(dir: string): Promise<FragmentManifest | null>;
-  /** languages/ 直下のディレクトリ名一覧（universe 計算用） */
-  listLanguages(): Promise<string[]>;
-  /** languages/<lang>/ が存在するか（未知 language 検出用） */
-  languageExists(lang: string): Promise<boolean>;
+  /** `<axis>/` 直下のディレクトリ名一覧（universe 計算用） */
+  listNames(axis: FragmentAxis): Promise<string[]>;
+  /** `<axis>/<name>/` が存在するか（未知名検出用） */
+  nameExists(axis: FragmentAxis, name: string): Promise<boolean>;
 }
 
 /** resolve の出力。戦略ごとに必要な情報を持つ（actual とのマージは computeChanges が行う） */

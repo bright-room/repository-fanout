@@ -4,9 +4,11 @@ import type { FragmentManifest, TemplateSource } from "../../src/templates/types
 
 function memorySource(opts: {
   files: Record<string, string>;
-  fragments: Record<string, FragmentManifest>; // "base" | "languages/<lang>"
+  fragments: Record<string, FragmentManifest>; // "base" | "languages/<lang>" | "bundles/<name>"
   languages: string[]; // 存在する language 一覧
+  bundles?: string[]; // 存在する bundle 一覧
 }): TemplateSource {
+  const names = { languages: opts.languages, bundles: opts.bundles ?? [] };
   return {
     async readFile(p) {
       return opts.files[p] ?? null;
@@ -17,11 +19,11 @@ function memorySource(opts: {
     async readFragmentManifest(dir) {
       return opts.fragments[dir] ?? null;
     },
-    async listLanguages() {
-      return opts.languages;
+    async listNames(axis) {
+      return names[axis];
     },
-    async languageExists(lang) {
-      return opts.languages.includes(lang);
+    async nameExists(axis, name) {
+      return names[axis].includes(name);
     },
   };
 }
@@ -58,6 +60,7 @@ test("strategies are assigned per path via registry", async () => {
   const entries = await resolveDesiredEntries({
     source: source(),
     languages: [],
+    bundles: [],
     vars: { codeowner: "kukv" },
     exclude: [],
   });
@@ -73,6 +76,7 @@ test("extends-field entry carries managed (declared) and universe (all languages
   const entries = await resolveDesiredEntries({
     source: source(),
     languages: ["typescript"],
+    bundles: [],
     vars: {},
     exclude: [],
   });
@@ -97,6 +101,7 @@ test("managed-block entries compose block content (vars + language lines)", asyn
   const entries = await resolveDesiredEntries({
     source: source(),
     languages: ["terraform"],
+    bundles: [],
     vars: { codeowner: "o/team" },
     exclude: [],
   });
@@ -125,6 +130,7 @@ test("composed replacements insert $ patterns literally (no $&/$$ expansion)", a
   const entries = await resolveDesiredEntries({
     source: src,
     languages: [],
+    bundles: [],
     vars: {},
     exclude: [],
   });
@@ -140,13 +146,20 @@ test("language files are included; unknown language throws; collision throws; ex
   const withTs = await resolveDesiredEntries({
     source: source(),
     languages: ["typescript"],
+    bundles: [],
     vars: {},
     exclude: [],
   });
   expect(withTs.find((e) => e.path === ".editorconfig")?.strategy).toBe("replace");
 
   await expect(
-    resolveDesiredEntries({ source: source(), languages: ["typoscript"], vars: {}, exclude: [] }),
+    resolveDesiredEntries({
+      source: source(),
+      languages: ["typoscript"],
+      bundles: [],
+      vars: {},
+      exclude: [],
+    }),
   ).rejects.toThrow(/unknown language/i);
 
   const collide = memorySource({
@@ -155,14 +168,83 @@ test("language files are included; unknown language throws; collision throws; ex
     languages: ["a", "b"],
   });
   await expect(
-    resolveDesiredEntries({ source: collide, languages: ["a", "b"], vars: {}, exclude: [] }),
+    resolveDesiredEntries({
+      source: collide,
+      languages: ["a", "b"],
+      bundles: [],
+      vars: {},
+      exclude: [],
+    }),
   ).rejects.toThrow(/collision/i);
 
   const excluded = await resolveDesiredEntries({
     source: source(),
     languages: [],
+    bundles: [],
     vars: { codeowner: "x" },
     exclude: [".github/CODEOWNERS"],
   });
   expect(excluded.find((e) => e.path === ".github/CODEOWNERS")).toBeUndefined();
+});
+
+test("bundle fragments merge after languages and contribute to universe; bundle files are distributed", async () => {
+  const src = memorySource({
+    files: {
+      "base/files/renovate.json": '{\n  "extends": [{{renovate_extends}}]\n}\n',
+      "bundles/oss/files/CONTRIBUTING.md": "contributing\n",
+    },
+    fragments: {
+      base: { renovate: ["github>o/renovate-config"] },
+      "languages/java": { renovate: ["github>o/renovate-config:java"] },
+      "bundles/oss": { renovate: ["github>o/renovate-config:oss"] },
+    },
+    languages: ["java"],
+    bundles: ["oss"],
+  });
+  const entries = await resolveDesiredEntries({
+    source: src,
+    languages: ["java"],
+    bundles: ["oss"],
+    vars: {},
+    exclude: [],
+  });
+  const r = entries.find((e) => e.path === "renovate.json");
+  if (r?.strategy !== "extends-field") throw new Error("wrong strategy");
+  expect(r.managedExtends).toEqual([
+    "github>o/renovate-config",
+    "github>o/renovate-config:java",
+    "github>o/renovate-config:oss",
+  ]);
+  expect(r.universe).toContain("github>o/renovate-config:oss");
+
+  const contrib = entries.find((e) => e.path === "CONTRIBUTING.md");
+  expect(contrib?.strategy).toBe("replace");
+});
+
+test("unknown bundle throws; language/bundle file collision throws", async () => {
+  await expect(
+    resolveDesiredEntries({
+      source: source(),
+      languages: [],
+      bundles: ["nope"],
+      vars: {},
+      exclude: [],
+    }),
+  ).rejects.toThrow(/unknown bundle/i);
+
+  const collide = memorySource({
+    files: { "languages/a/files/x.txt": "a", "bundles/b/files/x.txt": "b" },
+    fragments: {},
+    languages: ["a"],
+    bundles: ["b"],
+  });
+  await expect(
+    resolveDesiredEntries({
+      source: collide,
+      languages: ["a"],
+      bundles: ["b"],
+      vars: {},
+      exclude: [],
+    }),
+  ).rejects.toThrow(/collision/i);
 });

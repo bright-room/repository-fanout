@@ -5,6 +5,7 @@ import type { DesiredEntry, FragmentManifest, TemplateSource } from "./types.js"
 export interface ResolveArgs {
   source: TemplateSource;
   languages: string[];
+  bundles: string[];
   vars: Record<string, string>;
   exclude: string[];
 }
@@ -20,27 +21,38 @@ function destPath(fullPath: string): string {
   return fullPath
     .replace(/^base\/files\//, "")
     .replace(/^languages\/[^/]+\/files\//, "")
+    .replace(/^bundles\/[^/]+\/files\//, "")
     .replace(/^seeds\//, "");
 }
 
 export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredEntry[]> {
   const { source } = args;
 
-  // 1. 未知 language はエラー
+  // 1. 未知 language / bundle はエラー
   for (const lang of args.languages) {
-    if (!(await source.languageExists(lang))) throw new Error(`unknown language: ${lang}`);
+    if (!(await source.nameExists("languages", lang))) throw new Error(`unknown language: ${lang}`);
+  }
+  for (const bundle of args.bundles) {
+    if (!(await source.nameExists("bundles", bundle))) throw new Error(`unknown bundle: ${bundle}`);
   }
 
-  // 2. fragment 収集：宣言分（base→宣言順）と全 language（universe 用）
+  // 2. fragment 収集：宣言分（base→languages 宣言順→bundles 宣言順）と全 language/bundle（universe 用）
   const baseFragment = (await source.readFragmentManifest("base")) ?? {};
   const declared: FragmentManifest[] = [baseFragment];
   for (const lang of args.languages) {
     declared.push((await source.readFragmentManifest(`languages/${lang}`)) ?? {});
   }
-  const allLangs = await source.listLanguages();
+  for (const bundle of args.bundles) {
+    declared.push((await source.readFragmentManifest(`bundles/${bundle}`)) ?? {});
+  }
+  const allLangs = await source.listNames("languages");
+  const allBundles = await source.listNames("bundles");
   const all: FragmentManifest[] = [baseFragment];
   for (const lang of allLangs) {
     all.push((await source.readFragmentManifest(`languages/${lang}`)) ?? {});
+  }
+  for (const bundle of allBundles) {
+    all.push((await source.readFragmentManifest(`bundles/${bundle}`)) ?? {});
   }
 
   const managedExtends = dedupePreserveOrder(declared.flatMap((f) => f.renovate ?? []));
@@ -52,6 +64,7 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
     { prefix: "base/files/", seeds: false },
     { prefix: "seeds/", seeds: true },
     ...args.languages.map((l) => ({ prefix: `languages/${l}/files/`, seeds: false })),
+    ...args.bundles.map((b) => ({ prefix: `bundles/${b}/files/`, seeds: false })),
   ];
 
   const byDest = new Map<string, DesiredEntry>();

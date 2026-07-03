@@ -23,6 +23,8 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
   const { source } = args;
 
   // 0. strategies.json（不在は fail fast。spec 2026-07-03 §3）
+  // 注: TemplateSource.readFile は取得失敗を一律 null にするため、一時的な API エラーも
+  // 「不在」と同じエラーになる（リトライは Workflows の step リトライに委ねる）。
   const strategies = parseStrategyConfig(await source.readFile("strategies.json"));
 
   // 1. 未知 language / bundle はエラー

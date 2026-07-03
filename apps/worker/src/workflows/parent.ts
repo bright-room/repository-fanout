@@ -37,11 +37,12 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
       const inst = instByAccount.get(manifest.account);
       if (!inst) {
         // installation 無し = アカウント単位 hard failure（spec §4 / §16-4）
-        for (const repo of Object.keys(manifest.repositories)) {
-          await step.do(`notify-fail ${manifest.account}/${repo}`, async () => {
+        for (const name of Object.keys(manifest.repositories)) {
+          await step.do(`notify-fail ${manifest.account}/${name}`, async () => {
             await reportRepoFailure(this.env, runId, {
               account: manifest.account,
-              repo,
+              // child の記録（owner/name）と識別子形式を揃える
+              repo: `${manifest.account}/${name}`,
               error: "no installation for account",
             });
           });
@@ -70,7 +71,8 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
           await step.do(`notify-fail ${manifest.account}/${name}`, async () => {
             await reportRepoFailure(this.env, runId, {
               account: manifest.account,
-              repo: name,
+              // child の記録（owner/name）と識別子形式を揃える
+              repo: `${manifest.account}/${name}`,
               error: `spawn failed: ${String(err)}`,
             });
           });

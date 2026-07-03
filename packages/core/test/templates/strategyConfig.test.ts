@@ -26,4 +26,5 @@ test("rejects non-object roots", () => {
 test("rejects unknown strategy values, naming the offending path", () => {
   expect(() => parseStrategyConfig('{"renovate.json":"replace"}')).toThrow(/renovate\.json/);
   expect(() => parseStrategyConfig('{"a.md":5}')).toThrow(/a\.md/);
+  expect(() => parseStrategyConfig('{"a.md":null}')).toThrow(/a\.md/);
 });

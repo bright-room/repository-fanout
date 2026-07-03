@@ -14,8 +14,8 @@ export function parseStrategyConfig(raw: string | null): StrategyConfig {
   let json: unknown;
   try {
     json = JSON.parse(raw);
-  } catch {
-    throw new Error("strategies.json: invalid JSON");
+  } catch (e) {
+    throw new Error(`strategies.json: invalid JSON: ${(e as Error).message}`);
   }
   if (typeof json !== "object" || json === null || Array.isArray(json)) {
     throw new Error("strategies.json: must be an object of path -> strategy");

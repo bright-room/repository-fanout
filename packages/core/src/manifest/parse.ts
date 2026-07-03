@@ -27,6 +27,14 @@ export function parseManifest(input: unknown): Manifest {
       throw new Error(`manifest: ${name}.languages must be an array of strings`);
     }
 
+    let bundles: string[] = [];
+    if (entry.bundles !== undefined) {
+      if (!Array.isArray(entry.bundles) || !entry.bundles.every((b) => typeof b === "string")) {
+        throw new Error(`manifest: ${name}.bundles must be an array of strings`);
+      }
+      bundles = entry.bundles as string[];
+    }
+
     let exclude: string[] = [];
     if (entry.exclude !== undefined) {
       if (!Array.isArray(entry.exclude) || !entry.exclude.every((e) => typeof e === "string")) {
@@ -46,7 +54,7 @@ export function parseManifest(input: unknown): Manifest {
       vars = entry.vars as Record<string, string>;
     }
 
-    repositories[name] = { languages: entry.languages as string[], vars, exclude };
+    repositories[name] = { languages: entry.languages as string[], bundles, vars, exclude };
   }
   return { account: o.account, revision: o.revision, sourceCommit: o.sourceCommit, repositories };
 }

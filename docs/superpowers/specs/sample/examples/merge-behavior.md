@@ -3,7 +3,7 @@
 `examples/*.renovate.json` / `*.gitignore` は**ファイルが無いリポへの新規作成**時の出力。
 既にファイルがあるリポでは、fanout は**自分が管理する断片だけ**を触る。その before/after を示す。
 
-## renovate.json（json-field: extends）
+## renovate.json（extends-field）
 
 対象リポ: `languages: ["java"]` → `["java", "typescript"]` に変更（フロントエンド追加）。
 リポは独自キー（packageRules）と独自 extends エントリ（`:enablePreCommit`）を持っている。

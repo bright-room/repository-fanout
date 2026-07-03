@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 正本となるテンプレ専用リポ `bright-room/canonical-files` を作成し、`base/seeds/languages` 構成で v0 テンプレを配置、ガバナンス（ブランチ保護・必須レビュー）を効かせる（renovate preset は `renovate-config` に構築済み）。
+**Goal:** 正本となるテンプレ専用リポ `bright-room/canonical-files` を作成し、`base/seeds/languages/bundles` + `strategies.json` 構成で v0 テンプレを配置、ガバナンス（ブランチ保護・必須レビュー）を効かせる（renovate preset は `renovate-config` に構築済み）。
 
 **Architecture:** 構成は `docs/superpowers/specs/sample/` をそのまま本番化する。リポ自体は `organization-structure` の Terraform で宣言的に作成（spec §3 ガバナンス要件）。
 
@@ -156,6 +156,34 @@ git commit -m "feat: add languages (terraform/typescript/java/kotlin)"
 
 ---
 
+## Task 4.5: strategies.json と bundles/oss を配置
+
+**Files:**
+- Create: `strategies.json`, `bundles/oss/fragment.json`, `bundles/oss/files/CONTRIBUTING.md`, `bundles/oss/files/SECURITY.md`
+
+- [ ] **Step 1: repository-fanout の sample から同一内容を配置**
+
+コピー元: `repository-fanout/docs/superpowers/specs/sample/strategies.json` と `sample/bundles/oss/**`。
+
+`strategies.json`（リポルート。不在だと fanout の reconcile がエラーになる必須ファイル）:
+
+```json
+{
+  "renovate.json": "extends-field",
+  ".gitignore": "managed-block",
+  ".github/CODEOWNERS": "managed-block"
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add strategies.json bundles
+git commit -m "feat: add strategies.json and bundles/oss"
+```
+
+---
+
 ## Task 5: このリポ自身のガバナンス & README
 
 **Files:**
@@ -186,6 +214,6 @@ PR を出してレビュー → マージ（ブランチ保護が効いている
 
 ## Self-Review
 
-- **Spec カバレッジ**：§3 テンプレ構成（base/seeds/languages・fragment+戦略・ガバナンス）= Task1-5（Task3 は仕様変更で削除）。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
+- **Spec カバレッジ**：§3 テンプレ構成（base/seeds/languages/bundles + strategies.json・fragment+戦略・ガバナンス）= Task1-5（Task4.5 含む。Task3 は仕様変更で削除）。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
 - **整合**：renovate preset 参照は `github>bright-room/renovate-config(:name)`（別リポ・構築済み・public 必須）。canonical-files 自体のリポ名は worker の `TEMPLATES_REPO` 変数でのみ参照される（fragment.json 内に自己参照なし）。
 - **Placeholder**：`{{renovate_extends}}`/`{{gitignore}}`/`{{codeowner}}` は**意図的なテンプレ変数**（fanout が描画。renovate.json は新規作成時のみ、gitignore/CODEOWNERS は managed-block の中身）。それ以外の TODO は無し。

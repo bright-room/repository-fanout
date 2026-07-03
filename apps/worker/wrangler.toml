@@ -27,3 +27,4 @@ class_name = "ChildWorkflow"
 # Secrets (set via `wrangler secret put`):
 #   APP_ID, APP_PRIVATE_KEY            … chloe-chan App
 #   SYNC_HMAC_SECRET__<account>        … アカウント別 HMAC シークレット
+#   DISCORD_WEBHOOK_URL                … 失敗通知先 Discord Webhook（任意。未設定ならスキップ）

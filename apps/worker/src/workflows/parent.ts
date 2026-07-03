@@ -1,8 +1,8 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { createAppJwt, listInstallations } from "@repository-fanout/core";
+import { reportRepoFailure } from "../failure.js";
 import type { Env } from "../index.js";
 import { getManifest, listManifests } from "../kv/manifestStore.js";
-import { recordRepoResult } from "../kv/runStore.js";
 
 export interface ParentParams {
   runId: string;
@@ -37,12 +37,14 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
       const inst = instByAccount.get(manifest.account);
       if (!inst) {
         // installation 無し = アカウント単位 hard failure（spec §4 / §16-4）
-        for (const repo of Object.keys(manifest.repositories)) {
-          await recordRepoResult(this.env.RUNS, runId, {
-            account: manifest.account,
-            repo,
-            status: "failed",
-            error: "no installation for account",
+        for (const name of Object.keys(manifest.repositories)) {
+          await step.do(`notify-fail ${manifest.account}/${name}`, async () => {
+            await reportRepoFailure(this.env, runId, {
+              account: manifest.account,
+              // child の記録（owner/name）と識別子形式を揃える
+              repo: `${manifest.account}/${name}`,
+              error: "no installation for account",
+            });
           });
         }
         continue;
@@ -59,17 +61,20 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
                 installationId: inst.id,
                 repo: `${manifest.account}/${name}`,
                 languages: entry.languages,
+                bundles: entry.bundles,
                 vars: entry.vars,
                 exclude: entry.exclude,
               },
             });
           });
         } catch (err) {
-          await recordRepoResult(this.env.RUNS, runId, {
-            account: manifest.account,
-            repo: name,
-            status: "failed",
-            error: `spawn failed: ${String(err)}`,
+          await step.do(`notify-fail ${manifest.account}/${name}`, async () => {
+            await reportRepoFailure(this.env, runId, {
+              account: manifest.account,
+              // child の記録（owner/name）と識別子形式を揃える
+              repo: `${manifest.account}/${name}`,
+              error: `spawn failed: ${String(err)}`,
+            });
           });
         }
         await step.sleep(`stagger ${manifest.account}/${name}`, STAGGER_MS);

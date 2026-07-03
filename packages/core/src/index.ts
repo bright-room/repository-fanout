@@ -21,6 +21,7 @@ export { renderGitignore, substituteVars } from "./templates/render.js";
 export { resolveDesiredEntries } from "./templates/resolve.js";
 export type {
   DesiredEntry,
+  FragmentAxis,
   FragmentManifest,
   GitignoreSection,
   TemplateSource,

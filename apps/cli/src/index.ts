@@ -13,11 +13,12 @@ async function main() {
   const repo = arg("repo");
   const templatesRepo = arg("templates") ?? "bright-room/canonical-files";
   const languages = (arg("languages") ?? "").split(",").filter(Boolean);
+  const bundles = (arg("bundles") ?? "").split(",").filter(Boolean);
   const codeowner = arg("codeowner") ?? repo?.split("/")[0] ?? "";
   const token = process.env.GITHUB_TOKEN;
   if (cmd !== "dry-run" || !repo || !token) {
     console.error(
-      "usage: GITHUB_TOKEN=... fanout dry-run --repo owner/name [--languages a,b] [--templates owner/repo] [--codeowner x]",
+      "usage: GITHUB_TOKEN=... fanout dry-run --repo owner/name [--languages a,b] [--bundles x,y] [--templates owner/repo] [--codeowner x]",
     );
     process.exit(2);
   }
@@ -25,6 +26,7 @@ async function main() {
   const plan = await planRepo({
     source: templateSource(client, templatesRepo),
     languages,
+    bundles,
     vars: { codeowner },
     exclude: [],
     readActual: actualReader(client, repo),

@@ -1,0 +1,3 @@
+{
+  "_comment": "bundles = 言語と独立に opt-in する配布束。oss は公開リポ向けの定型ドキュメントを配るだけで、renovate / gitignore への寄与は無し（キーは省略可）。"
+}

@@ -1,0 +1,5 @@
+{
+  "renovate.json": "extends-field",
+  ".gitignore": "managed-block",
+  ".github/CODEOWNERS": "managed-block"
+}

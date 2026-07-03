@@ -83,6 +83,34 @@ test("parseManifest rejects vars with non-string values", () => {
   ).toThrow(/vars/i);
 });
 
+test("parseManifest defaults bundles to []", () => {
+  const m = parseManifest({
+    account: "kukv",
+    revision: 1,
+    sourceCommit: "x",
+    repositories: { dotfiles: { languages: [] } },
+  });
+  expect(m.repositories.dotfiles?.bundles).toEqual([]);
+});
+
+test("parseManifest accepts bundles and rejects non-string entries", () => {
+  const m = parseManifest({
+    account: "kukv",
+    revision: 1,
+    sourceCommit: "x",
+    repositories: { dotfiles: { languages: [], bundles: ["oss"] } },
+  });
+  expect(m.repositories.dotfiles?.bundles).toEqual(["oss"]);
+  expect(() =>
+    parseManifest({
+      account: "kukv",
+      revision: 1,
+      sourceCommit: "x",
+      repositories: { dotfiles: { languages: [], bundles: [1] } },
+    }),
+  ).toThrow(/bundles/i);
+});
+
 test("isNewerRevision enforces monotonic CAS", () => {
   expect(isNewerRevision(6, 5)).toBe(true);
   expect(isNewerRevision(5, 5)).toBe(false);

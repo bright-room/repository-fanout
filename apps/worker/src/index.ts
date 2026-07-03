@@ -10,6 +10,8 @@ export interface Env {
   APP_ID: string;
   APP_PRIVATE_KEY: string;
   TEMPLATES_REPO: string;
+  /** Discord Webhook（任意）。未設定なら失敗通知をスキップ */
+  DISCORD_WEBHOOK_URL?: string;
   // SYNC_HMAC_SECRET__<account> は動的に参照（下記 secretFor）
   [key: string]: unknown;
 }

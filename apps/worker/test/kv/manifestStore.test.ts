@@ -6,7 +6,7 @@ const m = (rev: number) => ({
   account: "bright-room",
   revision: rev,
   sourceCommit: "c",
-  repositories: { r: { languages: [], vars: {}, exclude: [] } },
+  repositories: { r: { languages: [], bundles: [], vars: {}, exclude: [] } },
 });
 
 test("putManifestCas stores and getManifest reads back", async () => {

@@ -16,6 +16,8 @@ export type { BranchAction, BranchInput, PrState } from "./reconcile/branch.js";
 export { decideBranchAction } from "./reconcile/branch.js";
 export type { FileChange } from "./reconcile/diff.js";
 export { computeChanges } from "./reconcile/diff.js";
+export type { DistFileRecord, DistRecord, Distributed } from "./reconcile/distRecord.js";
+export { emptyDistRecord, parseDistRecord, recordDistribution } from "./reconcile/distRecord.js";
 export { applyExtendsField, mergeExtends, RenovateParseError } from "./reconcile/extendsField.js";
 export { renderGitignore, substituteVars } from "./templates/render.js";
 export { resolveDesiredEntries } from "./templates/resolve.js";

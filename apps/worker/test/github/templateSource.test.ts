@@ -40,21 +40,24 @@ test("readFragmentManifest parses fragment.json content", async () => {
   expect(fm?.renovate).toEqual(["github>o/renovate-config:terraform"]);
 });
 
-test("listLanguages returns unique language dir names from tree", async () => {
+test("listNames returns unique dir names per axis; nameExists checks the axis", async () => {
   const client = clientReturning({
     "/git/trees/HEAD?recursive=1": {
       tree: [
         { path: "languages/terraform/fragment.json", type: "blob" },
         { path: "languages/typescript/fragment.json", type: "blob" },
         { path: "languages/typescript/files/.editorconfig", type: "blob" },
+        { path: "bundles/oss/files/CONTRIBUTING.md", type: "blob" },
         { path: "base/fragment.json", type: "blob" },
       ],
     },
   });
   const src = new GitHubTemplateSource({ client, repo: "o/c" });
-  expect((await src.listLanguages()).sort()).toEqual(["terraform", "typescript"]);
-  expect(await src.languageExists("terraform")).toBe(true);
-  expect(await src.languageExists("nope")).toBe(false);
+  expect((await src.listNames("languages")).sort()).toEqual(["terraform", "typescript"]);
+  expect(await src.listNames("bundles")).toEqual(["oss"]);
+  expect(await src.nameExists("languages", "terraform")).toBe(true);
+  expect(await src.nameExists("languages", "oss")).toBe(false);
+  expect(await src.nameExists("bundles", "oss")).toBe(true);
 });
 
 test("readFile decodes multibyte UTF-8 content losslessly", async () => {

@@ -36,6 +36,7 @@ export interface ChildParams {
   installationId: number;
   repo: string; // "owner/name"
   languages: string[];
+  bundles: string[];
   vars: Record<string, string>;
   exclude: string[];
 }
@@ -64,6 +65,7 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
           resolveDesiredEntries({
             source: templates,
             languages: p.languages,
+            bundles: p.bundles,
             vars: p.vars,
             exclude: p.exclude,
           }),

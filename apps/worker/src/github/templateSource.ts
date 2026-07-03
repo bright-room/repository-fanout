@@ -1,4 +1,9 @@
-import type { FragmentManifest, GitHubClient, TemplateSource } from "@repository-fanout/core";
+import type {
+  FragmentAxis,
+  FragmentManifest,
+  GitHubClient,
+  TemplateSource,
+} from "@repository-fanout/core";
 import { decodeBase64Utf8 } from "./base64.js";
 
 export interface TemplateSourceOpts {
@@ -45,16 +50,17 @@ export class GitHubTemplateSource implements TemplateSource {
     return raw ? (JSON.parse(raw) as FragmentManifest) : null;
   }
 
-  async listLanguages(): Promise<string[]> {
-    const langs = new Set<string>();
+  async listNames(axis: FragmentAxis): Promise<string[]> {
+    const names = new Set<string>();
+    const re = new RegExp(`^${axis}/([^/]+)/`);
     for (const p of await this.tree()) {
-      const m = /^languages\/([^/]+)\//.exec(p);
-      if (m) langs.add(m[1]!);
+      const m = re.exec(p);
+      if (m) names.add(m[1]!);
     }
-    return [...langs];
+    return [...names];
   }
 
-  async languageExists(lang: string): Promise<boolean> {
-    return (await this.tree()).some((p) => p.startsWith(`languages/${lang}/`));
+  async nameExists(axis: FragmentAxis, name: string): Promise<boolean> {
+    return (await this.tree()).some((p) => p.startsWith(`${axis}/${name}/`));
   }
 }

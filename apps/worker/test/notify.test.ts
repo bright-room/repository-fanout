@@ -20,6 +20,17 @@ test("posts a plain content message to the webhook", async () => {
   expect(body.content).toContain("r1");
 });
 
+test("truncates content to stay under Discord's 2000-char limit", async () => {
+  const fetchMock = vi.fn(
+    async (_url: string, _init: RequestInit) => new Response("", { status: 204 }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  await notifyFailure("https://discord.example/webhook", { ...info, error: "x".repeat(3000) });
+  const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+  const body = JSON.parse(init.body as string) as { content: string };
+  expect(body.content.length).toBeLessThanOrEqual(2000);
+});
+
 test("skips when webhook url is not configured", async () => {
   const fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);

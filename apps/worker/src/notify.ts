@@ -15,12 +15,17 @@ export async function notifyFailure(
   info: FailureInfo,
 ): Promise<void> {
   if (!webhookUrl) return;
-  const content = `❌ fanout failed: ${info.repo} (account: ${info.account}) — ${info.error} (run: ${info.runId})`;
+  const content =
+    `❌ fanout failed: ${info.repo} (account: ${info.account}) — ${info.error} (run: ${info.runId})`.slice(
+      0,
+      1900,
+    );
   try {
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ content }),
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) console.error(`discord notify failed: HTTP ${res.status}`);
   } catch (err) {

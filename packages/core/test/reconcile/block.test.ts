@@ -31,3 +31,33 @@ test("throws when block content itself contains a whole-line marker", () => {
   expect(() => applyManagedBlock(undefined, `a\n${BLOCK_END}\nb`)).toThrow(/marker/i);
   expect(() => applyManagedBlock("repo\n", `${BLOCK_START}\nx`)).toThrow(/marker/i);
 });
+
+test("drops an existing unmarked line that duplicates the managed block content", () => {
+  // v0 等が残した「これから管理する行」と同一の既存行は managed ブロックに集約する（重複させない）
+  expect(applyManagedBlock("* @team\n", "* @team")).toBe(`${block("* @team")}\n`);
+});
+
+test("keeps repo-own lines but drops ones duplicating the block content", () => {
+  expect(applyManagedBlock("* @team\n/docs @docs\n", "* @team")).toBe(
+    `${block("* @team")}\n/docs @docs\n`,
+  );
+});
+
+test("drops duplicate lines left outside the block on re-apply", () => {
+  const actual = `${block("* @team")}\n* @team\n`;
+  expect(applyManagedBlock(actual, "* @team")).toBe(`${block("* @team")}\n`);
+});
+
+test("dedups multiple duplicated lines (.gitignore-style multi-line block)", () => {
+  // .gitignore のような複数行ブロックでも、外に残った重複行をまとめて除去する
+  const content = "node_modules/\ndist/\n*.log";
+  expect(applyManagedBlock("node_modules/\ndist/\n*.log\n", content)).toBe(`${block(content)}\n`);
+});
+
+test("dedups only matching lines, keeping repo-specific ignores in order", () => {
+  const content = "node_modules/\ndist/";
+  // /secret.txt はリポ固有 → 保持、node_modules/・dist/ は重複 → 除去
+  expect(applyManagedBlock("node_modules/\n/secret.txt\ndist/\n", content)).toBe(
+    `${block(content)}\n/secret.txt\n`,
+  );
+});

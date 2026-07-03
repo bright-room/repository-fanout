@@ -9,7 +9,9 @@ export class GitHubClient {
 
   constructor(opts: GitHubClientOptions) {
     this.token = opts.token;
-    this.fetchImpl = opts.fetchImpl ?? fetch;
+    // グローバル fetch は this=globalThis を要求する。bare 参照を代入して
+    // this.fetchImpl(...) で呼ぶと本番 workerd で Illegal invocation になるため bind する。
+    this.fetchImpl = opts.fetchImpl ?? fetch.bind(globalThis);
     this.baseUrl = opts.baseUrl ?? "https://api.github.com";
     this.userAgent = opts.userAgent ?? "repository-fanout";
   }

@@ -22,7 +22,11 @@ function manifest(account: string, repoNames: string[], revision = 1) {
   };
 }
 
-const inst = (account: string, id: number) => ({ account, id, accountType: "Organization" as const });
+const inst = (account: string, id: number) => ({
+  account,
+  id,
+  accountType: "Organization" as const,
+});
 
 describe("runParent wiring", () => {
   it("spawns a child per repo with full params", async () => {
@@ -42,9 +46,14 @@ describe("runParent wiring", () => {
     await env.MANIFESTS.put("manifest:acc", JSON.stringify(manifest("acc", ["r1", "r2", "r3"])));
     const created: Array<{ params: { repo: string } }> = [];
     const testEnv = { ...env, CHILD: { create: async (a: never) => void created.push(a) } };
-    await runParent(testEnv as never, { runId: "run-1", account: "acc", repos: ["r2"] }, fakeStep(), {
-      listInstallations: async () => [inst("acc", 42)],
-    });
+    await runParent(
+      testEnv as never,
+      { runId: "run-1", account: "acc", repos: ["r2"] },
+      fakeStep(),
+      {
+        listInstallations: async () => [inst("acc", 42)],
+      },
+    );
     expect(created.map((c) => c.params.repo)).toEqual(["acc/r2"]);
   });
 

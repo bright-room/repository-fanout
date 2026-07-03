@@ -76,7 +76,12 @@ export async function verifyGitHubOidc(args: VerifyOidcArgs): Promise<OidcClaims
 
   const parts = args.token.split(".");
   const [headerB64, payloadB64, sigB64] = parts;
-  if (parts.length !== 3 || headerB64 === undefined || payloadB64 === undefined || sigB64 === undefined)
+  if (
+    parts.length !== 3 ||
+    headerB64 === undefined ||
+    payloadB64 === undefined ||
+    sigB64 === undefined
+  )
     throw new OidcError("malformed token", 401);
   let header: Record<string, unknown>;
   let payload: Record<string, unknown>;
@@ -110,7 +115,9 @@ export async function verifyGitHubOidc(args: VerifyOidcArgs): Promise<OidcClaims
   if (payload.iss !== ISSUER) throw new OidcError("bad issuer", 401);
   const aud = payload.aud;
   const audOk =
-    typeof aud === "string" ? aud === args.audience : Array.isArray(aud) && aud.includes(args.audience);
+    typeof aud === "string"
+      ? aud === args.audience
+      : Array.isArray(aud) && aud.includes(args.audience);
   if (!audOk) throw new OidcError("bad audience", 401);
   if (typeof payload.exp !== "number" || payload.exp * 1000 <= nowMs)
     throw new OidcError("expired", 401);

@@ -3,17 +3,17 @@ import {
   computeChanges,
   createAppJwt,
   createInstallationToken,
-  decideBranchAction,
   type Distributed,
+  decideBranchAction,
   type FileChange,
   GitHubClient,
   GitHubError,
   type KeptFile,
-  planRetraction,
   type PrState,
-  recordDistribution,
+  planRetraction,
   RenovateParseError,
   RepoIO,
+  recordDistribution,
   resolveDesiredEntries,
   sha256Hex,
   type TemplateSource,
@@ -166,7 +166,11 @@ export async function runChild(
       if (d.strategy === "replace" && (changedPaths.has(d.path) || actual[d.path] === d.content)) {
         distributed.push({ path: d.path, strategy: "replace", hash: await sha256Hex(d.content) });
       } else if (d.strategy === "create-only" && changedPaths.has(d.path)) {
-        distributed.push({ path: d.path, strategy: "create-only", hash: await sha256Hex(d.content) });
+        distributed.push({
+          path: d.path,
+          strategy: "create-only",
+          hash: await sha256Hex(d.content),
+        });
       }
     }
     const nextRecord = recordDistribution(retraction.record, distributed);

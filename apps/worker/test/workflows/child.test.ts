@@ -1,5 +1,4 @@
 import { env } from "cloudflare:test";
-import { beforeEach, describe, expect, it } from "vitest";
 import {
   BLOCK_END,
   BLOCK_START,
@@ -9,8 +8,14 @@ import {
   sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
+import { beforeEach, describe, expect, it } from "vitest";
 import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
-import { type ChildParams, type RepoPort, runChild, type StepLike } from "../../src/workflows/child.js";
+import {
+  type ChildParams,
+  type RepoPort,
+  runChild,
+  type StepLike,
+} from "../../src/workflows/child.js";
 
 // --- フェイク群(全ステップを実際に実行する。スタブ迂回禁止: spec §9-2) ----
 const fakeStep: StepLike = {
@@ -176,15 +181,10 @@ describe("runChild wiring", () => {
       prs: [],
       bodies: {},
     };
-    await runChild(
-      env,
-      { ...params, exclude: [".gitignore"] },
-      fakeStep,
-      {
-        templates: memTemplates({ "base/files/.gitignore": "{{gitignore}}" }),
-        io: fakeRepo(state),
-      },
-    );
+    await runChild(env, { ...params, exclude: [".gitignore"] }, fakeStep, {
+      templates: memTemplates({ "base/files/.gitignore": "{{gitignore}}" }),
+      io: fakeRepo(state),
+    });
     expect(state.commits[0]!.changes).toEqual([{ path: ".gitignore", content: "repo-own\n" }]);
   });
 

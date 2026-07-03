@@ -50,7 +50,12 @@ export async function runParent(
     account: string;
     name: string;
     installationId: number;
-    entry: { languages: string[]; bundles: string[]; vars: Record<string, string>; exclude: string[] };
+    entry: {
+      languages: string[];
+      bundles: string[];
+      vars: Record<string, string>;
+      exclude: string[];
+    };
   }
   const items: SpawnItem[] = [];
 

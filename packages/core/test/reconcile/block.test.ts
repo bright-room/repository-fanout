@@ -47,3 +47,17 @@ test("drops duplicate lines left outside the block on re-apply", () => {
   const actual = `${block("* @team")}\n* @team\n`;
   expect(applyManagedBlock(actual, "* @team")).toBe(`${block("* @team")}\n`);
 });
+
+test("dedups multiple duplicated lines (.gitignore-style multi-line block)", () => {
+  // .gitignore のような複数行ブロックでも、外に残った重複行をまとめて除去する
+  const content = "node_modules/\ndist/\n*.log";
+  expect(applyManagedBlock("node_modules/\ndist/\n*.log\n", content)).toBe(`${block(content)}\n`);
+});
+
+test("dedups only matching lines, keeping repo-specific ignores in order", () => {
+  const content = "node_modules/\ndist/";
+  // /secret.txt はリポ固有 → 保持、node_modules/・dist/ は重複 → 除去
+  expect(applyManagedBlock("node_modules/\n/secret.txt\ndist/\n", content)).toBe(
+    `${block(content)}\n/secret.txt\n`,
+  );
+});

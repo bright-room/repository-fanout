@@ -12,10 +12,10 @@ const source: TemplateSource = {
   async readFragmentManifest(dir) {
     return dir === "base" ? { renovate: ["github>o/renovate-config"] } : null;
   },
-  async listLanguages() {
+  async listNames() {
     return [];
   },
-  async languageExists() {
+  async nameExists() {
     return true;
   },
 };
@@ -24,6 +24,7 @@ test("planRepo reports changes vs actual", async () => {
   const plan = await planRepo({
     source,
     languages: [],
+    bundles: [],
     vars: {},
     exclude: [],
     readActual: async () => ({}), // 何も無い → 追加
@@ -36,6 +37,7 @@ test("planRepo no-op when actual matches", async () => {
   const plan = await planRepo({
     source,
     languages: [],
+    bundles: [],
     vars: {},
     exclude: [],
     readActual: async () => ({ "renovate.json": '{"extends":["github>o/renovate-config"]}' }),
@@ -54,16 +56,17 @@ test("planRepo merges managed block with existing repo content", async () => {
     async readFragmentManifest(dir) {
       return dir === "base" ? { gitignore: [{ ignores: ["a"] }] } : null;
     },
-    async listLanguages() {
+    async listNames() {
       return [];
     },
-    async languageExists() {
+    async nameExists() {
       return true;
     },
   };
   const plan = await planRepo({
     source: src,
     languages: [],
+    bundles: [],
     vars: {},
     exclude: [],
     readActual: async () => ({ ".gitignore": "repo-own\n" }),

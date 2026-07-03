@@ -43,16 +43,17 @@ export function templateSource(client: GitHubClient, repo: string): TemplateSour
       const raw = await read(`${dir}/fragment.json`);
       return raw ? (JSON.parse(raw) as FragmentManifest) : null;
     },
-    async listLanguages() {
-      const langs = new Set<string>();
+    async listNames(axis) {
+      const names = new Set<string>();
+      const re = new RegExp(`^${axis}/([^/]+)/`);
       for (const p of await tree()) {
-        const m = /^languages\/([^/]+)\//.exec(p);
-        if (m) langs.add(m[1]!);
+        const m = re.exec(p);
+        if (m) names.add(m[1]!);
       }
-      return [...langs];
+      return [...names];
     },
-    async languageExists(lang) {
-      return (await tree()).some((p) => p.startsWith(`languages/${lang}/`));
+    async nameExists(axis, name) {
+      return (await tree()).some((p) => p.startsWith(`${axis}/${name}/`));
     },
   };
 }

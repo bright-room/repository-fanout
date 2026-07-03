@@ -14,7 +14,7 @@ describe("parseDistRecord", () => {
       version: 1,
       files: { "a.txt": { strategy: "replace", hashes: ["h1"] } },
     });
-    expect(parseDistRecord(raw).files["a.txt"].hashes).toEqual(["h1"]);
+    expect(parseDistRecord(raw).files["a.txt"]!.hashes).toEqual(["h1"]);
   });
   it("rejects unknown version (fail fast, spec §5.3)", () => {
     expect(() => parseDistRecord(JSON.stringify({ version: 2, files: {} }))).toThrow(/unsupported/);
@@ -27,14 +27,14 @@ describe("recordDistribution", () => {
       { version: 1, files: { "a.txt": { strategy: "replace", hashes: ["h1"] } } },
       [{ path: "a.txt", strategy: "replace", hash: "h2" }],
     );
-    expect(r.files["a.txt"].hashes).toEqual(["h1", "h2"]);
+    expect(r.files["a.txt"]!.hashes).toEqual(["h1", "h2"]);
   });
   it("dedupes an already-recorded hash", () => {
     const r = recordDistribution(
       { version: 1, files: { "a.txt": { strategy: "replace", hashes: ["h1"] } } },
       [{ path: "a.txt", strategy: "replace", hash: "h1" }],
     );
-    expect(r.files["a.txt"].hashes).toEqual(["h1"]);
+    expect(r.files["a.txt"]!.hashes).toEqual(["h1"]);
   });
   it("adds a new path", () => {
     const r = recordDistribution(emptyDistRecord(), [

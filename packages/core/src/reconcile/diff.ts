@@ -1,5 +1,5 @@
 import type { DesiredEntry } from "../templates/types.js";
-import { applyManagedBlock } from "./block.js";
+import { applyManagedBlock, removeManagedBlock } from "./block.js";
 import { applyExtendsField } from "./extendsField.js";
 
 export interface FileChange {
@@ -37,6 +37,18 @@ export function computeChanges(
           break;
         }
         const next = applyExtendsField(current, d.managedExtends, d.universe);
+        if (next !== null) changes.push({ path: d.path, content: next });
+        break;
+      }
+      case "managed-block-retract": {
+        if (current === undefined) break; // ファイルが無ければ寄与ゼロ達成済み
+        const next = removeManagedBlock(current);
+        if (next !== undefined && next !== current) changes.push({ path: d.path, content: next });
+        break;
+      }
+      case "extends-field-retract": {
+        if (current === undefined) break; // 新規作成はしない
+        const next = applyExtendsField(current, [], d.universe);
         if (next !== null) changes.push({ path: d.path, content: next });
         break;
       }

@@ -43,4 +43,7 @@ export type DesiredEntry =
       universe: string[];
       /** ファイル不在時に新規作成する全文 */
       createContent: string;
-    };
+    }
+  /** exclude 指定時: fanout の寄与ゼロへ収束させる(spec v2 §5.5) */
+  | { strategy: "managed-block-retract"; path: string }
+  | { strategy: "extends-field-retract"; path: string; universe: string[] };

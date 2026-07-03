@@ -110,6 +110,19 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
     }
   }
 
-  for (const ex of args.exclude) byDest.delete(ex);
+  // exclude = 「そのパスへの fanout の寄与ゼロが望ましい状態」(spec v2 §5.5)。
+  // managed-block / extends-field は寄与の除去へ収束させる retract エントリに変換。
+  // replace / create-only はファイルに触らない(記録の引き渡しは worker の retraction 側)。
+  for (const ex of args.exclude) {
+    const entry = byDest.get(ex);
+    if (!entry) continue;
+    if (entry.strategy === "managed-block") {
+      byDest.set(ex, { strategy: "managed-block-retract", path: ex });
+    } else if (entry.strategy === "extends-field") {
+      byDest.set(ex, { strategy: "extends-field-retract", path: ex, universe: entry.universe });
+    } else {
+      byDest.delete(ex);
+    }
+  }
   return [...byDest.values()];
 }

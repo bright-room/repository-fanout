@@ -78,3 +78,50 @@ test("throws (rather than silently no-op) on an unknown strategy", () => {
   const bogus = { strategy: "bogus", path: "x", content: "y" } as unknown as DesiredEntry;
   expect(() => computeChanges([bogus], {})).toThrow(/strategy/i);
 });
+
+test("managed-block-retract strips the block, keeps repo content", () => {
+  const actual = `${BLOCK_START}\nmanaged\n${BLOCK_END}\nrepo-own\n`;
+  const changes = computeChanges([{ strategy: "managed-block-retract", path: ".gitignore" }], {
+    ".gitignore": actual,
+  });
+  expect(changes).toEqual([{ path: ".gitignore", content: "repo-own\n" }]);
+});
+
+test("managed-block-retract is a no-op when no block (収束済み)", () => {
+  const changes = computeChanges([{ strategy: "managed-block-retract", path: ".gitignore" }], {
+    ".gitignore": "repo-own\n",
+  });
+  expect(changes).toEqual([]);
+});
+
+test("managed-block-retract is a no-op when file absent", () => {
+  expect(computeChanges([{ strategy: "managed-block-retract", path: ".gitignore" }], {})).toEqual(
+    [],
+  );
+});
+
+test("extends-field-retract removes universe entries, keeps repo-own ones", () => {
+  const actual = JSON.stringify({
+    extends: ["github>bright-room/renovate-config", "local>own"],
+  });
+  const changes = computeChanges(
+    [
+      {
+        strategy: "extends-field-retract",
+        path: "renovate.json",
+        universe: ["github>bright-room/renovate-config"],
+      },
+    ],
+    { "renovate.json": actual },
+  );
+  expect(JSON.parse(changes[0]!.content).extends).toEqual(["local>own"]);
+});
+
+test("extends-field-retract is a no-op when file absent (新規作成しない)", () => {
+  expect(
+    computeChanges(
+      [{ strategy: "extends-field-retract", path: "renovate.json", universe: ["x"] }],
+      {},
+    ),
+  ).toEqual([]);
+});

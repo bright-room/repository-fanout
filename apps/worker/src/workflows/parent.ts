@@ -38,10 +38,12 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
       if (!inst) {
         // installation 無し = アカウント単位 hard failure（spec §4 / §16-4）
         for (const repo of Object.keys(manifest.repositories)) {
-          await reportRepoFailure(this.env, runId, {
-            account: manifest.account,
-            repo,
-            error: "no installation for account",
+          await step.do(`notify-fail ${manifest.account}/${repo}`, async () => {
+            await reportRepoFailure(this.env, runId, {
+              account: manifest.account,
+              repo,
+              error: "no installation for account",
+            });
           });
         }
         continue;
@@ -65,10 +67,12 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
             });
           });
         } catch (err) {
-          await reportRepoFailure(this.env, runId, {
-            account: manifest.account,
-            repo: name,
-            error: `spawn failed: ${String(err)}`,
+          await step.do(`notify-fail ${manifest.account}/${name}`, async () => {
+            await reportRepoFailure(this.env, runId, {
+              account: manifest.account,
+              repo: name,
+              error: `spawn failed: ${String(err)}`,
+            });
           });
         }
         await step.sleep(`stagger ${manifest.account}/${name}`, STAGGER_MS);

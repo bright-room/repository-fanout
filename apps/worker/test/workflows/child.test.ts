@@ -1,0 +1,207 @@
+import { env } from "cloudflare:test";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  BLOCK_END,
+  BLOCK_START,
+  type DistRecord,
+  type FragmentAxis,
+  type FragmentManifest,
+  sha256Hex,
+  type TemplateSource,
+} from "@repository-fanout/core";
+import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
+import { type ChildParams, type RepoPort, runChild, type StepLike } from "../../src/workflows/child.js";
+
+// --- フェイク群(全ステップを実際に実行する。スタブ迂回禁止: spec §9-2) ----
+const fakeStep: StepLike = {
+  do: (_name, fn) => fn(),
+  sleep: async () => {},
+};
+
+/** インメモリ TemplateSource: base に release.yml(replace)のみの最小正本 */
+function memTemplates(files: Record<string, string>): TemplateSource {
+  const strategies = JSON.stringify({
+    "renovate.json": "extends-field",
+    ".gitignore": "managed-block",
+    ".github/CODEOWNERS": "managed-block",
+  });
+  return {
+    readFile: async (p) => (p === "strategies.json" ? strategies : (files[p] ?? null)),
+    listFiles: async (prefix) => Object.keys(files).filter((p) => p.startsWith(prefix)),
+    readFragmentManifest: async (dir): Promise<FragmentManifest | null> =>
+      dir === "base" ? {} : null,
+    listNames: async (_axis: FragmentAxis) => [],
+    nameExists: async () => false,
+  };
+}
+
+interface FakeRepoState {
+  files: Record<string, string>;
+  commits: Array<{ changes: Array<{ path: string; content: string }>; deletions: string[] }>;
+  prs: Array<{ number: number; body: string }>;
+  bodies: Record<number, string>;
+}
+
+function fakeRepo(state: FakeRepoState): RepoPort {
+  return {
+    getDefaultBranch: async () => ({ branch: "main", sha: "base-sha" }),
+    readActualFiles: async (paths) => {
+      const out: Record<string, string> = {};
+      for (const p of paths) if (state.files[p] !== undefined) out[p] = state.files[p];
+      return out;
+    },
+    findPr: async () => null,
+    branchExists: async () => false,
+    getTreeSha: async () => "tree-sha",
+    commitChanges: async (args) => {
+      state.commits.push({ changes: args.changes, deletions: args.deletions ?? [] });
+    },
+    createPr: async (args) => {
+      state.prs.push({ number: 1, body: args.body });
+      return 1;
+    },
+    reopenPr: async () => {},
+    addLabels: async () => {},
+    deleteBranch: async () => {},
+    updatePrBody: async (n, body) => {
+      state.bodies[n] = body;
+    },
+  };
+}
+
+const params: ChildParams = {
+  runId: "run-1",
+  account: "bright-room",
+  installationId: 1,
+  repo: "bright-room/target",
+  languages: [],
+  bundles: [],
+  vars: {},
+  exclude: [],
+};
+
+const RELEASE = "changelog: {}\n";
+
+// MANIFESTS/RUNS KV は各テストで独立(vitest-pool-workers の isolated storage)
+
+describe("runChild wiring", () => {
+  it("distributes a new file, creates PR, records hash in dist record", async () => {
+    const state: FakeRepoState = { files: {}, commits: [], prs: [], bodies: {} };
+    await runChild(env, params, fakeStep, {
+      templates: memTemplates({ "base/files/.github/release.yml": RELEASE }),
+      io: fakeRepo(state),
+    });
+    expect(state.commits[0]!.changes).toEqual([{ path: ".github/release.yml", content: RELEASE }]);
+    expect(state.prs).toHaveLength(1);
+    const rec = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
+    expect(rec.files[".github/release.yml"]!.hashes).toEqual([await sha256Hex(RELEASE)]);
+  });
+
+  it("canonical file removed + hash matches → deletion in PR, record kept (spec §5.4)", async () => {
+    const rec: DistRecord = {
+      version: 1,
+      files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
+    };
+    await putDistRecord(env.MANIFESTS, "bright-room", "bright-room/target", rec);
+    const state: FakeRepoState = { files: { "old.yml": "OLD" }, commits: [], prs: [], bodies: {} };
+    await runChild(env, params, fakeStep, {
+      templates: memTemplates({}), // 正本から消えた
+      io: fakeRepo(state),
+    });
+    expect(state.commits[0]!.deletions).toEqual(["old.yml"]);
+    const after = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
+    expect(after.files["old.yml"]).toBeDefined(); // merge 確認まで維持
+  });
+
+  it("modified file → kept, dropped from record, noted in PR body", async () => {
+    const rec: DistRecord = {
+      version: 1,
+      files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
+    };
+    await putDistRecord(env.MANIFESTS, "bright-room", "bright-room/target", rec);
+    const state: FakeRepoState = {
+      files: { "old.yml": "REPO-EDITED" },
+      commits: [],
+      prs: [],
+      bodies: {},
+    };
+    await runChild(env, params, fakeStep, {
+      templates: memTemplates({ "base/files/.github/release.yml": RELEASE }), // 別の差分で PR は出る
+      io: fakeRepo(state),
+    });
+    expect(state.commits[0]!.deletions).toEqual([]);
+    expect(state.prs[0]!.body).toContain("old.yml");
+    expect(state.prs[0]!.body).toContain("残置");
+    const after = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
+    expect(after.files["old.yml"]).toBeUndefined();
+  });
+
+  it("no diff → noop, but record cleanup still persisted", async () => {
+    const rec: DistRecord = {
+      version: 1,
+      files: { "gone.yml": { strategy: "replace", hashes: ["h"] } }, // 実ファイル無し → 掃除
+    };
+    await putDistRecord(env.MANIFESTS, "bright-room", "bright-room/target", rec);
+    const state: FakeRepoState = { files: {}, commits: [], prs: [], bodies: {} };
+    await runChild(env, params, fakeStep, {
+      templates: memTemplates({}),
+      io: fakeRepo(state),
+    });
+    expect(state.commits).toHaveLength(0);
+    const after = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
+    expect(after.files["gone.yml"]).toBeUndefined();
+  });
+
+  it("already-converged replace file is adopted into the record (v0 取り込み)", async () => {
+    const state: FakeRepoState = {
+      files: { ".github/release.yml": RELEASE }, // v0 が配った同一内容
+      commits: [],
+      prs: [],
+      bodies: {},
+    };
+    await runChild(env, params, fakeStep, {
+      templates: memTemplates({ "base/files/.github/release.yml": RELEASE }),
+      io: fakeRepo(state),
+    });
+    expect(state.commits).toHaveLength(0); // 差分なし
+    const rec = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
+    expect(rec.files[".github/release.yml"]!.hashes).toEqual([await sha256Hex(RELEASE)]);
+  });
+
+  it("managed-block exclude strips block via PR (spec §5.5)", async () => {
+    const gitignore = `${BLOCK_START}\nmanaged\n${BLOCK_END}\nrepo-own\n`;
+    const state: FakeRepoState = {
+      files: { ".gitignore": gitignore },
+      commits: [],
+      prs: [],
+      bodies: {},
+    };
+    await runChild(
+      env,
+      { ...params, exclude: [".gitignore"] },
+      fakeStep,
+      {
+        templates: memTemplates({ "base/files/.gitignore": "{{gitignore}}" }),
+        io: fakeRepo(state),
+      },
+    );
+    expect(state.commits[0]!.changes).toEqual([{ path: ".gitignore", content: "repo-own\n" }]);
+  });
+
+  it("failure is recorded and rethrown (Workflows リトライに委ねる)", async () => {
+    const failingRepo: RepoPort = {
+      ...fakeRepo({ files: {}, commits: [], prs: [], bodies: {} }),
+      getDefaultBranch: async () => {
+        throw new Error("boom");
+      },
+    };
+    await expect(
+      runChild(env, params, fakeStep, {
+        templates: memTemplates({}),
+        io: failingRepo,
+      }),
+    ).rejects.toThrow("boom");
+    const raw = await env.RUNS.get("run:run-1:bright-room:bright-room/target");
+    expect(JSON.parse(raw ?? "{}")).toMatchObject({ status: "failed" });
+  });
+});

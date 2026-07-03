@@ -1,8 +1,8 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { createAppJwt, listInstallations } from "@repository-fanout/core";
+import { reportRepoFailure } from "../failure.js";
 import type { Env } from "../index.js";
 import { getManifest, listManifests } from "../kv/manifestStore.js";
-import { recordRepoResult } from "../kv/runStore.js";
 
 export interface ParentParams {
   runId: string;
@@ -38,10 +38,9 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
       if (!inst) {
         // installation 無し = アカウント単位 hard failure（spec §4 / §16-4）
         for (const repo of Object.keys(manifest.repositories)) {
-          await recordRepoResult(this.env.RUNS, runId, {
+          await reportRepoFailure(this.env, runId, {
             account: manifest.account,
             repo,
-            status: "failed",
             error: "no installation for account",
           });
         }
@@ -66,10 +65,9 @@ export class ParentWorkflow extends WorkflowEntrypoint<Env, ParentParams> {
             });
           });
         } catch (err) {
-          await recordRepoResult(this.env.RUNS, runId, {
+          await reportRepoFailure(this.env, runId, {
             account: manifest.account,
             repo: name,
-            status: "failed",
             error: `spawn failed: ${String(err)}`,
           });
         }

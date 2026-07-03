@@ -11,6 +11,7 @@ import {
   RenovateParseError,
   resolveDesiredEntries,
 } from "@repository-fanout/core";
+import { reportRepoFailure } from "../failure.js";
 import { RepoIO } from "../github/repoIO.js";
 import { GitHubTemplateSource } from "../github/templateSource.js";
 import type { Env } from "../index.js";
@@ -89,10 +90,9 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
         if (err instanceof RenovateParseError) {
           // パース不能な renovate.json はリトライ無意味な恒久エラー。
           // failed を記録して静かに終える（exclude で自前管理に逃がす運用）。
-          await recordRepoResult(this.env.RUNS, p.runId, {
+          await reportRepoFailure(this.env, p.runId, {
             account: p.account,
             repo: p.repo,
-            status: "failed",
             error: err.message,
           });
           return;
@@ -197,10 +197,9 @@ export class ChildWorkflow extends WorkflowEntrypoint<Env, ChildParams> {
         prNumber,
       });
     } catch (err) {
-      await recordRepoResult(this.env.RUNS, p.runId, {
+      await reportRepoFailure(this.env, p.runId, {
         account: p.account,
         repo: p.repo,
-        status: "failed",
         error: String(err),
       });
       throw err; // Workflows のリトライに委ねる

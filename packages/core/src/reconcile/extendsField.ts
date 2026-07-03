@@ -49,7 +49,8 @@ export function applyExtendsField(
   const obj = parsed as Record<string, unknown>;
   const actualExtends = normalizeExtends(obj.extends);
   const next = mergeExtends(actualExtends, managed, universe);
-  if (next.length === actualExtends.length && next.every((v, i) => v === actualExtends[i])) return null;
+  if (next.length === actualExtends.length && next.every((v, i) => v === actualExtends[i]))
+    return null;
   obj.extends = next; // JSON.parse は挿入順を保持。既存キー位置は維持される
   return `${JSON.stringify(obj, null, 2)}\n`;
 }

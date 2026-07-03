@@ -1,4 +1,4 @@
-import { GitHubClient, type FragmentManifest, type TemplateSource } from "@repository-fanout/core";
+import type { FragmentManifest, GitHubClient, TemplateSource } from "@repository-fanout/core";
 import { decodeBase64Utf8 } from "./base64.js";
 
 export interface TemplateSourceOpts {

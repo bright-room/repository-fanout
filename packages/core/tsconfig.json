@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repository-fanout/tsconfig/base.json",
   "compilerOptions": { "noEmit": true, "types": [] },
   "include": ["src", "test"]
 }

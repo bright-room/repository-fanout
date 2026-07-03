@@ -4,10 +4,14 @@ export function parseManifest(input: unknown): Manifest {
   if (typeof input !== "object" || input === null) throw new Error("manifest: not an object");
   const o = input as Record<string, unknown>;
 
-  if (typeof o.account !== "string" || o.account.length === 0) throw new Error("manifest: account required");
-  if (typeof o.revision !== "number" || !Number.isInteger(o.revision)) throw new Error("manifest: integer revision required");
-  if (typeof o.sourceCommit !== "string" || o.sourceCommit.length === 0) throw new Error("manifest: sourceCommit required");
-  if (typeof o.repositories !== "object" || o.repositories === null) throw new Error("manifest: repositories required");
+  if (typeof o.account !== "string" || o.account.length === 0)
+    throw new Error("manifest: account required");
+  if (typeof o.revision !== "number" || !Number.isInteger(o.revision))
+    throw new Error("manifest: integer revision required");
+  if (typeof o.sourceCommit !== "string" || o.sourceCommit.length === 0)
+    throw new Error("manifest: sourceCommit required");
+  if (typeof o.repositories !== "object" || o.repositories === null)
+    throw new Error("manifest: repositories required");
 
   const repos = o.repositories as Record<string, unknown>;
   const names = Object.keys(repos);

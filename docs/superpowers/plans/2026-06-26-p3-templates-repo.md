@@ -1,8 +1,8 @@
-# P3: テンプレ専用リポ (common-files) Implementation Plan
+# P3: テンプレ専用リポ (canonical-files) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 正本となるテンプレ専用リポ `bright-room/common-files` を作成し、`base/seeds/languages/bundles` + `strategies.json` 構成で v0 テンプレを配置、ガバナンス（ブランチ保護・必須レビュー）を効かせる（renovate preset は `renovate-config` に構築済み）。
+**Goal:** 正本となるテンプレ専用リポ `bright-room/canonical-files` を作成し、`base/seeds/languages/bundles` + `strategies.json` 構成で v0 テンプレを配置、ガバナンス（ブランチ保護・必須レビュー）を効かせる（renovate preset は `renovate-config` に構築済み）。
 
 **Architecture:** 構成は `docs/superpowers/specs/sample/` をそのまま本番化する。リポ自体は `organization-structure` の Terraform で宣言的に作成（spec §3 ガバナンス要件）。
 
@@ -12,19 +12,19 @@
 
 ---
 
-## Task 1: Terraform で common-files リポを作成
+## Task 1: Terraform で canonical-files リポを作成
 
 **Files:**
-- Create: `<organization-structure>/terraform/repository_common-files.tf`
+- Create: `<organization-structure>/terraform/repository_canonical-files.tf`
 
 - [ ] **Step 1: モジュール宣言を追加**
 
-`organization-structure/terraform/repository_common-files.tf`:
+`organization-structure/terraform/repository_canonical-files.tf`:
 ```hcl
-module "repository_common_files" {
+module "repository_canonical_files" {
   source = "./modules/repository"
 
-  name        = "common-files"
+  name        = "canonical-files"
   description = "Canonical common files distributed to repositories by repository-fanout"
   visibility  = "public"
   topics      = ["repository-fanout", "templates", "renovate-config"]
@@ -40,29 +40,29 @@ module "repository_common_files" {
 - [ ] **Step 2: plan で差分確認**
 
 Run: `cd organization-structure/terraform && terraform plan`
-Expected: `module.repository_common_files.github_repository.this` などが新規作成として表示
+Expected: `module.repository_canonical_files.github_repository.this` などが新規作成として表示
 
 - [ ] **Step 3: PR → レビュー → マージ（apply は on-merge CI / minerva-sama）**
 
-Expected: `bright-room/common-files` リポが作成される（auto_init で main あり）
+Expected: `bright-room/canonical-files` リポが作成される（auto_init で main あり）
 
 - [ ] **Step 4: Commit（organization-structure 側）**
 
 ```bash
-git add terraform/repository_common-files.tf
-git commit -m "feat: add common-files templates repository"
+git add terraform/repository_canonical-files.tf
+git commit -m "feat: add canonical-files templates repository"
 ```
 
 ---
 
 ## Task 2: base/ を配置（renovate.json / CODEOWNERS / release.yml / .gitignore / fragment.json）
 
-**Files（common-files リポ内）:**
+**Files（canonical-files リポ内）:**
 - Create: `base/fragment.json`, `base/files/renovate.json`, `base/files/.gitignore`, `base/files/.github/CODEOWNERS`, `base/files/.github/release.yml`
 
 - [ ] **Step 1: sample の base/ をそのままコピー**
 
-`docs/superpowers/specs/sample/base/` の中身を common-files リポのルート `base/` にコピーする。内容（確定済み）：
+`docs/superpowers/specs/sample/base/` の中身を canonical-files リポのルート `base/` にコピーする。内容（確定済み）：
 
 `base/fragment.json`:
 ```json
@@ -71,7 +71,7 @@ git commit -m "feat: add common-files templates repository"
   "gitignore": ["# OS / editor", ".DS_Store", "Thumbs.db", ".idea/", ".vscode/", "", "# env", ".env", ".env.local"]
 }
 ```
-（preset 本体は `bright-room/renovate-config`（構築済み・public）。common-files には extends 参照文字列だけを置く）
+（preset 本体は `bright-room/renovate-config`（構築済み・public）。canonical-files には extends 参照文字列だけを置く）
 
 `base/files/renovate.json`:
 ```json
@@ -106,7 +106,7 @@ git commit -m "feat: add base fragment (renovate/codeowners/release/gitignore te
 
 ## Task 3: ~~presets/ を配置~~（不要になった）
 
-**2026-07-02 仕様変更により削除**：renovate preset 本体は `bright-room/renovate-config`（構築済み・public、`default.json` + `java/go/terraform/rust/typescript/kotlin.json`）に集約済み。common-files に `presets/` は置かない。preset の妥当性検証・ガバナンスは renovate-config リポ側で行う。
+**2026-07-02 仕様変更により削除**：renovate preset 本体は `bright-room/renovate-config`（構築済み・public、`default.json` + `java/go/terraform/rust/typescript/kotlin.json`）に集約済み。canonical-files に `presets/` は置かない。preset の妥当性検証・ガバナンスは renovate-config リポ側で行う。
 
 ---
 
@@ -205,7 +205,7 @@ git commit -m "feat: add strategies.json and bundles/oss"
 
 ```bash
 git add .github/CODEOWNERS README.md
-git commit -m "docs: codeowners and readme for common-files"
+git commit -m "docs: codeowners and readme for canonical-files"
 ```
 
 PR を出してレビュー → マージ（ブランチ保護が効いていることを確認）。
@@ -215,5 +215,5 @@ PR を出してレビュー → マージ（ブランチ保護が効いている
 ## Self-Review
 
 - **Spec カバレッジ**：§3 テンプレ構成（base/seeds/languages/bundles + strategies.json・fragment+戦略・ガバナンス）= Task1-5（Task4.5 含む。Task3 は仕様変更で削除）。seeds/ は当面空（spec §9）なので未作成でよい（必要時に追加）。
-- **整合**：renovate preset 参照は `github>bright-room/renovate-config(:name)`（別リポ・構築済み・public 必須）。common-files 自体のリポ名は worker の `TEMPLATES_REPO` 変数でのみ参照される（fragment.json 内に自己参照なし）。
+- **整合**：renovate preset 参照は `github>bright-room/renovate-config(:name)`（別リポ・構築済み・public 必須）。canonical-files 自体のリポ名は worker の `TEMPLATES_REPO` 変数でのみ参照される（fragment.json 内に自己参照なし）。
 - **Placeholder**：`{{renovate_extends}}`/`{{gitignore}}`/`{{codeowner}}` は**意図的なテンプレ変数**（fanout が描画。renovate.json は新規作成時のみ、gitignore/CODEOWNERS は managed-block の中身）。それ以外の TODO は無し。

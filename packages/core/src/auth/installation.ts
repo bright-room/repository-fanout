@@ -6,7 +6,10 @@ export interface Installation {
   accountType: "Organization" | "User";
 }
 
-interface ListArgs { appJwt: string; fetchImpl?: typeof fetch; }
+interface ListArgs {
+  appJwt: string;
+  fetchImpl?: typeof fetch;
+}
 
 export async function listInstallations(args: ListArgs): Promise<Installation[]> {
   const gh = new GitHubClient({ token: args.appJwt, fetchImpl: args.fetchImpl });
@@ -31,9 +34,15 @@ export async function listInstallations(args: ListArgs): Promise<Installation[]>
   return out;
 }
 
-interface TokenArgs { appJwt: string; installationId: number; fetchImpl?: typeof fetch; }
+interface TokenArgs {
+  appJwt: string;
+  installationId: number;
+  fetchImpl?: typeof fetch;
+}
 
-export async function createInstallationToken(args: TokenArgs): Promise<{ token: string; expiresAt: string }> {
+export async function createInstallationToken(
+  args: TokenArgs,
+): Promise<{ token: string; expiresAt: string }> {
   const gh = new GitHubClient({ token: args.appJwt, fetchImpl: args.fetchImpl });
   const r = await gh.request<{ token: string; expires_at: string }>(
     "POST",

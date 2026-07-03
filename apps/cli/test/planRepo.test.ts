@@ -1,6 +1,6 @@
+import type { TemplateSource } from "@repository-fanout/core";
 import { expect, test } from "vitest";
 import { planRepo } from "../src/planRepo.js";
-import type { TemplateSource } from "@repository-fanout/core";
 
 const source: TemplateSource = {
   async readFile(p) {
@@ -45,14 +45,27 @@ test("planRepo no-op when actual matches", async () => {
 
 test("planRepo merges managed block with existing repo content", async () => {
   const src: TemplateSource = {
-    async readFile(p) { return p === "base/files/.gitignore" ? "{{gitignore}}\n" : null; },
-    async listFiles(prefix) { return prefix === "base/files/" ? ["base/files/.gitignore"] : []; },
-    async readFragmentManifest(dir) { return dir === "base" ? { gitignore: [{ ignores: ["a"] }] } : null; },
-    async listLanguages() { return []; },
-    async languageExists() { return true; },
+    async readFile(p) {
+      return p === "base/files/.gitignore" ? "{{gitignore}}\n" : null;
+    },
+    async listFiles(prefix) {
+      return prefix === "base/files/" ? ["base/files/.gitignore"] : [];
+    },
+    async readFragmentManifest(dir) {
+      return dir === "base" ? { gitignore: [{ ignores: ["a"] }] } : null;
+    },
+    async listLanguages() {
+      return [];
+    },
+    async languageExists() {
+      return true;
+    },
   };
   const plan = await planRepo({
-    source: src, languages: [], vars: {}, exclude: [],
+    source: src,
+    languages: [],
+    vars: {},
+    exclude: [],
     readActual: async () => ({ ".gitignore": "repo-own\n" }),
   });
   expect(plan.changes[0]!.content).toContain("repo-own");

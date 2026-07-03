@@ -1,4 +1,4 @@
-import { parseManifest, isNewerRevision, type Manifest } from "@repository-fanout/core";
+import { isNewerRevision, type Manifest, parseManifest } from "@repository-fanout/core";
 
 const key = (account: string) => `manifest:${account}`;
 

@@ -1,9 +1,11 @@
 import { env } from "cloudflare:test";
 import { expect, test } from "vitest";
-import { putManifestCas, getManifest, listManifests } from "../../src/kv/manifestStore.js";
+import { getManifest, listManifests, putManifestCas } from "../../src/kv/manifestStore.js";
 
 const m = (rev: number) => ({
-  account: "bright-room", revision: rev, sourceCommit: "c",
+  account: "bright-room",
+  revision: rev,
+  sourceCommit: "c",
   repositories: { r: { languages: [], vars: {}, exclude: [] } },
 });
 

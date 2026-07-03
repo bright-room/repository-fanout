@@ -1,5 +1,10 @@
 import { expect, test } from "vitest";
-import { classifyStatus, parseRetryAfter, parseRateLimitRemaining, GitHubError } from "../../src/github/errors.js";
+import {
+  classifyStatus,
+  GitHubError,
+  parseRateLimitRemaining,
+  parseRetryAfter,
+} from "../../src/github/errors.js";
 
 test("classifyStatus marks transient statuses retryable", () => {
   expect(classifyStatus(429)).toBe("retryable");

@@ -1,8 +1,8 @@
 import {
-  resolveDesiredEntries,
   computeChanges,
-  type TemplateSource,
   type FileChange,
+  resolveDesiredEntries,
+  type TemplateSource,
 } from "@repository-fanout/core";
 
 export interface PlanArgs {

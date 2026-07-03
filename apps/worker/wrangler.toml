@@ -3,13 +3,16 @@ main = "src/index.ts"
 compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+TEMPLATES_REPO = "bright-room/canonical-files"
+
 [[kv_namespaces]]
 binding = "MANIFESTS"
-id = "PLACEHOLDER_CREATE_WITH_wrangler_kv_namespace_create"
+id = "950aa4e7da824aba818906bbfaf03873"
 
 [[kv_namespaces]]
 binding = "RUNS"
-id = "PLACEHOLDER_CREATE_WITH_wrangler_kv_namespace_create"
+id = "77d96d1327904dbd82ae3216f2b0e0f4"
 
 [[workflows]]
 name = "fanout-parent"
@@ -24,4 +27,3 @@ class_name = "ChildWorkflow"
 # Secrets (set via `wrangler secret put`):
 #   APP_ID, APP_PRIVATE_KEY            … chloe-chan App
 #   SYNC_HMAC_SECRET__<account>        … アカウント別 HMAC シークレット
-#   TEMPLATES_REPO                     … 例 "bright-room/common-files"（var でも可）

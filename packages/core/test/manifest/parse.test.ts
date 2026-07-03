@@ -1,12 +1,15 @@
 import { expect, test } from "vitest";
-import { parseManifest, isNewerRevision } from "../../src/manifest/parse.js";
+import { isNewerRevision, parseManifest } from "../../src/manifest/parse.js";
 
 const valid = {
   account: "bright-room",
   revision: 5,
   sourceCommit: "abc123",
   repositories: {
-    "endpoint-gate": { languages: ["terraform"], vars: { codeowner: "bright-room/br-maintainers" } },
+    "endpoint-gate": {
+      languages: ["terraform"],
+      vars: { codeowner: "bright-room/br-maintainers" },
+    },
   },
 };
 
@@ -27,7 +30,9 @@ test("parseManifest rejects missing account/revision", () => {
 
 test("parseManifest defaults vars/exclude", () => {
   const m = parseManifest({
-    account: "kukv", revision: 1, sourceCommit: "x",
+    account: "kukv",
+    revision: 1,
+    sourceCommit: "x",
     repositories: { dotfiles: { languages: [] } },
   });
   expect(m.repositories.dotfiles!.vars).toEqual({});
@@ -35,31 +40,47 @@ test("parseManifest defaults vars/exclude", () => {
 });
 
 test("parseManifest rejects non-string languages entries (no coercion)", () => {
-  expect(() => parseManifest({
-    account: "kukv", revision: 1, sourceCommit: "x",
-    repositories: { dotfiles: { languages: [1] } },
-  })).toThrow(/languages/i);
+  expect(() =>
+    parseManifest({
+      account: "kukv",
+      revision: 1,
+      sourceCommit: "x",
+      repositories: { dotfiles: { languages: [1] } },
+    }),
+  ).toThrow(/languages/i);
 });
 
 test("parseManifest rejects non-string exclude entries", () => {
-  expect(() => parseManifest({
-    account: "kukv", revision: 1, sourceCommit: "x",
-    repositories: { dotfiles: { languages: [], exclude: [true] } },
-  })).toThrow(/exclude/i);
+  expect(() =>
+    parseManifest({
+      account: "kukv",
+      revision: 1,
+      sourceCommit: "x",
+      repositories: { dotfiles: { languages: [], exclude: [true] } },
+    }),
+  ).toThrow(/exclude/i);
 });
 
 test("parseManifest rejects vars that is not an object", () => {
-  expect(() => parseManifest({
-    account: "kukv", revision: 1, sourceCommit: "x",
-    repositories: { dotfiles: { languages: [], vars: "oops" } },
-  })).toThrow(/vars/i);
+  expect(() =>
+    parseManifest({
+      account: "kukv",
+      revision: 1,
+      sourceCommit: "x",
+      repositories: { dotfiles: { languages: [], vars: "oops" } },
+    }),
+  ).toThrow(/vars/i);
 });
 
 test("parseManifest rejects vars with non-string values", () => {
-  expect(() => parseManifest({
-    account: "kukv", revision: 1, sourceCommit: "x",
-    repositories: { dotfiles: { languages: [], vars: { codeowner: 5 } } },
-  })).toThrow(/vars/i);
+  expect(() =>
+    parseManifest({
+      account: "kukv",
+      revision: 1,
+      sourceCommit: "x",
+      repositories: { dotfiles: { languages: [], vars: { codeowner: 5 } } },
+    }),
+  ).toThrow(/vars/i);
 });
 
 test("isNewerRevision enforces monotonic CAS", () => {

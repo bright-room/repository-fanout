@@ -11,7 +11,12 @@ export {
 } from "./github/errors.js";
 export { isNewerRevision, parseManifest } from "./manifest/parse.js";
 export type { Manifest, RepoEntry } from "./manifest/types.js";
-export { applyManagedBlock, BLOCK_END, BLOCK_START } from "./reconcile/block.js";
+export {
+  applyManagedBlock,
+  BLOCK_END,
+  BLOCK_START,
+  removeManagedBlock,
+} from "./reconcile/block.js";
 export type { BranchAction, BranchInput, PrState } from "./reconcile/branch.js";
 export { decideBranchAction } from "./reconcile/branch.js";
 export type { FileChange } from "./reconcile/diff.js";

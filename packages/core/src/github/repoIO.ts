@@ -73,6 +73,7 @@ export class RepoIO {
     baseTreeSha: string;
     message: string;
     changes: FileChange[];
+    deletions?: string[];
     create: boolean;
   }): Promise<void> {
     const blobs = await Promise.all(
@@ -88,9 +89,15 @@ export class RepoIO {
         ).sha,
       })),
     );
+    const removals = (args.deletions ?? []).map((path) => ({
+      path,
+      mode: "100644" as const,
+      type: "blob" as const,
+      sha: null, // Git Data API: sha=null でそのパスを tree から削除
+    }));
     const tree = await this.o.client.request<{ sha: string }>("POST", this.p("/git/trees"), {
       base_tree: args.baseTreeSha,
-      tree: blobs,
+      tree: [...blobs, ...removals],
     });
     const commit = await this.o.client.request<{ sha: string }>("POST", this.p("/git/commits"), {
       message: args.message,
@@ -135,6 +142,10 @@ export class RepoIO {
 
   async reopenPr(number: number): Promise<void> {
     await this.o.client.request("PATCH", this.p(`/pulls/${number}`), { state: "open" });
+  }
+
+  async updatePrBody(number: number, body: string): Promise<void> {
+    await this.o.client.request("PATCH", this.p(`/pulls/${number}`), { body });
   }
 
   async addLabels(number: number, labels: string[]): Promise<void> {

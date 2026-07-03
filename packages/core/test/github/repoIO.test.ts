@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { expect, it, test, vi } from "vitest";
 import { GitHubClient } from "../../src/github/client.js";
 import { RepoIO } from "../../src/github/repoIO.js";
 
@@ -48,4 +48,53 @@ test("readActualFiles decodes multibyte UTF-8 content losslessly", async () => {
   });
   const got = await io.readActualFiles(["x.md"], "main");
   expect(got["x.md"]).toBe(text);
+});
+
+it("commitChanges includes deletions as sha:null tree entries (spec §5.8)", async () => {
+  const requests: Array<{ method: string; url: string; body?: unknown }> = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = String(input);
+    requests.push({
+      method: init?.method ?? "GET",
+      url,
+      body: init?.body ? JSON.parse(String(init.body)) : undefined,
+    });
+    if (url.endsWith("/git/blobs")) return Response.json({ sha: "blob1" }, { status: 201 });
+    if (url.endsWith("/git/trees")) return Response.json({ sha: "tree1" }, { status: 201 });
+    if (url.endsWith("/git/commits")) return Response.json({ sha: "commit1" }, { status: 201 });
+    return Response.json({}, { status: 200 });
+  };
+  const io = new RepoIO({ client: new GitHubClient({ token: "t", fetchImpl }), repo: "o/r" });
+  await io.commitChanges({
+    branch: "b",
+    baseSha: "base",
+    baseTreeSha: "btree",
+    message: "m",
+    changes: [{ path: "a.txt", content: "A" }],
+    deletions: ["old.yml"],
+    create: false,
+  });
+  const treeReq = requests.find((r) => r.url.endsWith("/git/trees"));
+  expect((treeReq?.body as { tree: unknown[] }).tree).toContainEqual({
+    path: "old.yml",
+    mode: "100644",
+    type: "blob",
+    sha: null,
+  });
+});
+
+it("updatePrBody PATCHes the pull request body", async () => {
+  const requests: Array<{ method: string; url: string; body?: unknown }> = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    requests.push({
+      method: init?.method ?? "GET",
+      url: String(input),
+      body: init?.body ? JSON.parse(String(init.body)) : undefined,
+    });
+    return Response.json({}, { status: 200 });
+  };
+  const io = new RepoIO({ client: new GitHubClient({ token: "t", fetchImpl }), repo: "o/r" });
+  await io.updatePrBody(7, "new body");
+  expect(requests[0]).toMatchObject({ method: "PATCH", body: { body: "new body" } });
+  expect(requests[0]?.url).toContain("/pulls/7");
 });

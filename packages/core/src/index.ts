@@ -9,14 +9,25 @@ export {
   parseRateLimitRemaining,
   parseRetryAfter,
 } from "./github/errors.js";
+export type { PrInfo, RepoIOOpts } from "./github/repoIO.js";
+export { RepoIO } from "./github/repoIO.js";
 export { isNewerRevision, parseManifest } from "./manifest/parse.js";
 export type { Manifest, RepoEntry } from "./manifest/types.js";
-export { applyManagedBlock, BLOCK_END, BLOCK_START } from "./reconcile/block.js";
+export {
+  applyManagedBlock,
+  BLOCK_END,
+  BLOCK_START,
+  removeManagedBlock,
+} from "./reconcile/block.js";
 export type { BranchAction, BranchInput, PrState } from "./reconcile/branch.js";
 export { decideBranchAction } from "./reconcile/branch.js";
 export type { FileChange } from "./reconcile/diff.js";
 export { computeChanges } from "./reconcile/diff.js";
+export type { DistFileRecord, DistRecord, Distributed } from "./reconcile/distRecord.js";
+export { emptyDistRecord, parseDistRecord, recordDistribution } from "./reconcile/distRecord.js";
 export { applyExtendsField, mergeExtends, RenovateParseError } from "./reconcile/extendsField.js";
+export type { KeptFile, RetractionArgs, RetractionPlan } from "./reconcile/retraction.js";
+export { planRetraction } from "./reconcile/retraction.js";
 export { renderGitignore, substituteVars } from "./templates/render.js";
 export { resolveDesiredEntries } from "./templates/resolve.js";
 export type {
@@ -26,3 +37,5 @@ export type {
   GitignoreSection,
   TemplateSource,
 } from "./templates/types.js";
+export { decodeBase64Utf8 } from "./util/base64.js";
+export { sha256Hex } from "./util/hash.js";

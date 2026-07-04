@@ -1,4 +1,9 @@
-import type { FragmentManifest, GitHubClient, TemplateSource } from "@repository-fanout/core";
+import {
+  type FragmentManifest,
+  type GitHubClient,
+  GitHubError,
+  type TemplateSource,
+} from "@repository-fanout/core";
 
 /**
  * GitHub Contents API は base64(UTF-8 bytes) を改行入りで返す。
@@ -68,8 +73,11 @@ export function actualReader(client: GitHubClient, repo: string, ref = "HEAD") {
           `/repos/${repo}/contents/${encodeURI(path)}?ref=${encodeURIComponent(ref)}`,
         );
         out[path] = decodeBase64Utf8(r.content);
-      } catch {
-        // 取得失敗（404 等）はすべて「未配置」とみなし、結果に含めない。
+      } catch (err) {
+        // 404 のみ「未配置」とみなす。5xx やネットワーク断まで未配置扱いすると
+        // dry-run の diff を誤って報告してしまう。
+        if (err instanceof GitHubError && err.status === 404) continue;
+        throw err;
       }
     }
     return out;

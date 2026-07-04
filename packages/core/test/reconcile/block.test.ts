@@ -1,5 +1,10 @@
-import { expect, test } from "vitest";
-import { applyManagedBlock, BLOCK_END, BLOCK_START } from "../../src/reconcile/block.js";
+import { describe, expect, test } from "vitest";
+import {
+  applyManagedBlock,
+  BLOCK_END,
+  BLOCK_START,
+  removeManagedBlock,
+} from "../../src/reconcile/block.js";
 
 const block = (inner: string) => `${BLOCK_START}\n${inner}\n${BLOCK_END}`;
 
@@ -60,4 +65,21 @@ test("dedups only matching lines, keeping repo-specific ignores in order", () =>
   expect(applyManagedBlock("node_modules/\n/secret.txt\ndist/\n", content)).toBe(
     `${block(content)}\n/secret.txt\n`,
   );
+});
+
+describe("removeManagedBlock (spec §5.5 exclude)", () => {
+  const managedBlock = `${BLOCK_START}\nmanaged-line\n${BLOCK_END}`;
+
+  test("removes the block, preserving repo-own content below", () => {
+    expect(removeManagedBlock(`${managedBlock}\nrepo-own\n`)).toBe("repo-own\n");
+  });
+  test("no block → returns input unchanged (収束済み no-op)", () => {
+    expect(removeManagedBlock("repo-own\n")).toBe("repo-own\n");
+  });
+  test("block-only file → empty string (ファイル自体は消さない)", () => {
+    expect(removeManagedBlock(`${managedBlock}\n`)).toBe("");
+  });
+  test("undefined (file absent) → undefined", () => {
+    expect(removeManagedBlock(undefined)).toBeUndefined();
+  });
 });

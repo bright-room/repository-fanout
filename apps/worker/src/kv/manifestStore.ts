@@ -10,16 +10,21 @@ export async function getManifest(kv: KVNamespace, account: string): Promise<Man
 /**
  * NOTE: KV にはアトミックな compare-and-swap が無いため、これは read-then-write の
  * last-writer-wins。manifest push は低頻度なので競合はほぼ起きず、許容する。
+ *
+ * revision 意味論(spec v2 §6.1): 厳密に古い revision のみ stale=true で拒否。
+ * 同一 revision は「保存不要・ただし再実行(reconcile 起動)は許可」— これにより
+ * 「保存成功+起動失敗 → 同一 revision の再送が stale 扱いで永久に起動しない」穴を塞ぐ。
  */
 export async function putManifestCas(
   kv: KVNamespace,
   manifest: Manifest,
-): Promise<{ stored: boolean }> {
+): Promise<{ stored: boolean; stale: boolean }> {
   const valid = parseManifest(manifest); // 再検証
   const current = await getManifest(kv, valid.account);
-  if (!isNewerRevision(valid.revision, current?.revision)) return { stored: false };
+  if (current && valid.revision < current.revision) return { stored: false, stale: true };
+  if (!isNewerRevision(valid.revision, current?.revision)) return { stored: false, stale: false };
   await kv.put(key(valid.account), JSON.stringify(valid));
-  return { stored: true };
+  return { stored: true, stale: false };
 }
 
 export async function listManifests(kv: KVNamespace): Promise<Manifest[]> {

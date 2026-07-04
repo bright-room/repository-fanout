@@ -54,3 +54,17 @@ export function applyManagedBlock(actual: string | undefined, blockContent: stri
   const rest = dropDup(actual);
   return rest === "" ? `${blockText}\n` : `${blockText}\n${rest}`;
 }
+
+/**
+ * exclude(opt-out)時のブロック除去(spec v2 §5.5)。
+ * ブロック(マーカー行含む)を取り除き、リポ独自部分だけを残した全文を返す。
+ * ブロックが無ければそのまま返す(継続収束・冪等)。ファイル不在は undefined。
+ */
+export function removeManagedBlock(actual: string | undefined): string | undefined {
+  if (actual === undefined) return undefined;
+  const start = findMarkerLine(actual, BLOCK_START);
+  const end = start === -1 ? -1 : findMarkerLine(actual, BLOCK_END, start + BLOCK_START.length);
+  if (start === -1 || end <= start) return actual;
+  const rest = actual.slice(0, start) + actual.slice(end + BLOCK_END.length);
+  return rest.replace(/^\n+/, "");
+}

@@ -1,5 +1,7 @@
-import type { FileChange, GitHubClient } from "@repository-fanout/core";
-import { decodeBase64Utf8 } from "./base64.js";
+import type { FileChange } from "../reconcile/diff.js";
+import { decodeBase64Utf8 } from "../util/base64.js";
+import type { GitHubClient } from "./client.js";
+import { GitHubError } from "./errors.js";
 
 export interface RepoIOOpts {
   client: GitHubClient;
@@ -37,8 +39,11 @@ export class RepoIO {
           this.p(`/contents/${encodeURI(path)}?ref=${encodeURIComponent(ref)}`),
         );
         out[path] = decodeBase64Utf8(r.content);
-      } catch {
-        /* 404 = 未配置 */
+      } catch (err) {
+        // 404 のみ「未配置」とみなす。5xx やネットワーク断まで未配置扱いすると
+        // 削除候補の実体確認が誤り、配布記録が静かに掃除されてしまう。
+        if (err instanceof GitHubError && err.status === 404) continue;
+        throw err;
       }
     }
     return out;
@@ -72,6 +77,7 @@ export class RepoIO {
     baseTreeSha: string;
     message: string;
     changes: FileChange[];
+    deletions?: string[];
     create: boolean;
   }): Promise<void> {
     const blobs = await Promise.all(
@@ -87,9 +93,15 @@ export class RepoIO {
         ).sha,
       })),
     );
+    const removals = (args.deletions ?? []).map((path) => ({
+      path,
+      mode: "100644" as const,
+      type: "blob" as const,
+      sha: null, // Git Data API: sha=null でそのパスを tree から削除
+    }));
     const tree = await this.o.client.request<{ sha: string }>("POST", this.p("/git/trees"), {
       base_tree: args.baseTreeSha,
-      tree: blobs,
+      tree: [...blobs, ...removals],
     });
     const commit = await this.o.client.request<{ sha: string }>("POST", this.p("/git/commits"), {
       message: args.message,
@@ -134,6 +146,10 @@ export class RepoIO {
 
   async reopenPr(number: number): Promise<void> {
     await this.o.client.request("PATCH", this.p(`/pulls/${number}`), { state: "open" });
+  }
+
+  async updatePrBody(number: number, body: string): Promise<void> {
+    await this.o.client.request("PATCH", this.p(`/pulls/${number}`), { body });
   }
 
   async addLabels(number: number, labels: string[]): Promise<void> {

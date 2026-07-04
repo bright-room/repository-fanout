@@ -149,7 +149,7 @@ test("composed replacements insert $ patterns literally (no $&/$$ expansion)", a
   expect(r.createContent).toBe('{\n  "extends": ["github>o/rc$&x", "a$$b"]\n}\n');
 });
 
-test("language files are included; unknown language throws; collision throws; exclude removes", async () => {
+test("language files are included; unknown language throws; collision throws; exclude retracts managed-block", async () => {
   const withTs = await resolveDesiredEntries({
     source: source(),
     languages: ["typescript"],
@@ -184,6 +184,7 @@ test("language files are included; unknown language throws; collision throws; ex
     }),
   ).rejects.toThrow(/collision/i);
 
+  // .github/CODEOWNERS は managed-block 戦略 → exclude は削除ではなく retract に収束する(spec v2 §5.5)
   const excluded = await resolveDesiredEntries({
     source: source(),
     languages: [],
@@ -191,7 +192,10 @@ test("language files are included; unknown language throws; collision throws; ex
     vars: { codeowner: "x" },
     exclude: [".github/CODEOWNERS"],
   });
-  expect(excluded.find((e) => e.path === ".github/CODEOWNERS")).toBeUndefined();
+  expect(excluded.find((e) => e.path === ".github/CODEOWNERS")).toEqual({
+    strategy: "managed-block-retract",
+    path: ".github/CODEOWNERS",
+  });
 });
 
 test("bundle fragments merge after languages and contribute to universe; bundle files are distributed", async () => {
@@ -266,6 +270,41 @@ test("missing strategies.json fails resolve (fail fast)", async () => {
   await expect(
     resolveDesiredEntries({ source: src, languages: [], bundles: [], vars: {}, exclude: [] }),
   ).rejects.toThrow(/strategies\.json not found/i);
+});
+
+test("exclude on managed-block path yields a retract entry (spec §5.5)", async () => {
+  const entries = await resolveDesiredEntries({
+    source: source(),
+    languages: [],
+    bundles: [],
+    vars: {},
+    exclude: [".gitignore"],
+  });
+  expect(entries).toContainEqual({ strategy: "managed-block-retract", path: ".gitignore" });
+});
+
+test("exclude on extends-field path yields a retract entry carrying universe", async () => {
+  const entries = await resolveDesiredEntries({
+    source: source(),
+    languages: [],
+    bundles: [],
+    vars: {},
+    exclude: ["renovate.json"],
+  });
+  const e = entries.find((x) => x.path === "renovate.json");
+  expect(e?.strategy).toBe("extends-field-retract");
+  if (e?.strategy === "extends-field-retract") expect(e.universe.length).toBeGreaterThan(0);
+});
+
+test("exclude on replace path simply drops the entry (ファイルは触らない)", async () => {
+  const entries = await resolveDesiredEntries({
+    source: source(),
+    languages: [],
+    bundles: [],
+    vars: {},
+    exclude: [".github/release.yml"],
+  });
+  expect(entries.find((x) => x.path === ".github/release.yml")).toBeUndefined();
 });
 
 test("strategy mapping is data-driven: config assigns and unassigns without code change", async () => {

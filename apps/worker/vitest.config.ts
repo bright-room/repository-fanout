@@ -14,11 +14,10 @@ export default defineConfig({
         compatibilityFlags: ["nodejs_compat"],
         kvNamespaces: ["MANIFESTS", "RUNS"],
         bindings: {
-          "SYNC_HMAC_SECRET__bright-room": "testsecret",
-          SYNC_HMAC_SECRET___global: "globalsecret",
           APP_ID: "1",
           APP_PRIVATE_KEY: "test",
           TEMPLATES_REPO: "o/c",
+          OIDC_AUDIENCE: "https://repository-fanout.bright-room.workers.dev",
         },
       },
     }),

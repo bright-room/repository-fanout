@@ -5,6 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 TEMPLATES_REPO = "bright-room/canonical-files"
+# OIDC トークンの aud(= fanout の URL。spec v2 §6.2 / D12: workers.dev で恒久化)
+OIDC_AUDIENCE = "https://repository-fanout.bright-room.workers.dev"
 
 [[kv_namespaces]]
 binding = "MANIFESTS"
@@ -26,5 +28,4 @@ class_name = "ChildWorkflow"
 
 # Secrets (set via `wrangler secret put`):
 #   APP_ID, APP_PRIVATE_KEY            … chloe-chan App
-#   SYNC_HMAC_SECRET__<account>        … アカウント別 HMAC シークレット
 #   DISCORD_WEBHOOK_URL                … 失敗通知先 Discord Webhook（任意。未設定ならスキップ）

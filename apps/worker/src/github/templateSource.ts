@@ -1,10 +1,10 @@
-import type {
-  FragmentAxis,
-  FragmentManifest,
-  GitHubClient,
-  TemplateSource,
+import {
+  decodeBase64Utf8,
+  type FragmentAxis,
+  type FragmentManifest,
+  type GitHubClient,
+  type TemplateSource,
 } from "@repository-fanout/core";
-import { decodeBase64Utf8 } from "./base64.js";
 
 export interface TemplateSourceOpts {
   client: GitHubClient;

@@ -1,4 +1,4 @@
-import { GitHubClient } from "@repository-fanout/core";
+import { GitHubClient, GitHubError } from "@repository-fanout/core";
 import { expect, test } from "vitest";
 import { actualReader, templateSource } from "../src/github.js";
 
@@ -48,4 +48,13 @@ test("actualReader decodes UTF-8 and omits missing paths", async () => {
   const read = actualReader(client, "o/repo");
   const out = await read(["renovate.json", "absent.txt"]);
   expect(out).toEqual({ "renovate.json": '{"key":"値"}' });
+});
+
+test("actualReader skips only 404s; other errors are not swallowed", async () => {
+  const client = new GitHubClient({
+    token: "x",
+    fetchImpl: (async () => new Response("boom", { status: 500 })) as unknown as typeof fetch,
+  });
+  const read = actualReader(client, "o/repo");
+  await expect(read(["broken.yml"])).rejects.toThrow(GitHubError);
 });

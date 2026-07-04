@@ -8,7 +8,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "start": "tsx src/index.ts",
-    "dry-run": "tsx src/index.ts dry-run"
+    "dry-run": "tsx src/index.ts dry-run",
+    "apply": "tsx src/index.ts apply"
   },
   "dependencies": { "@repository-fanout/core": "workspace:*" },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import type { Dirent } from "node:fs";
-import { readdir, readFile as fsReadFile, stat } from "node:fs/promises";
+import { readFile as fsReadFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { FragmentAxis, FragmentManifest, TemplateSource } from "@repository-fanout/core";
 

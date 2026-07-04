@@ -11,6 +11,24 @@ function arg(name: string): string | undefined {
 
 async function main() {
   const cmd = process.argv[2];
+  if (cmd === "validate") {
+    const dir = arg("dir");
+    if (!dir) {
+      console.error("usage: fanout validate --dir <canonical-files checkout path>");
+      process.exit(2);
+    }
+    const { localSource } = await import("./localSource.js");
+    const { validateSource } = await import("./validateDir.js");
+    const errors = await validateSource(localSource(dir));
+    if (errors.length > 0) {
+      console.error(`validation failed (${errors.length} error(s)):`);
+      for (const e of errors) console.error(`  ✗ ${e}`);
+      process.exit(1);
+    }
+    console.log("validation OK");
+    return;
+  }
+
   const repo = arg("repo");
   const templatesRepo = arg("templates") ?? "bright-room/canonical-files";
   const languages = (arg("languages") ?? "").split(",").filter(Boolean);
@@ -19,7 +37,7 @@ async function main() {
   const token = process.env.GITHUB_TOKEN;
   if ((cmd !== "dry-run" && cmd !== "apply") || !repo || !token) {
     console.error(
-      "usage: GITHUB_TOKEN=... fanout <dry-run|apply> --repo owner/name [--languages a,b] [--bundles x,y] [--templates owner/repo] [--codeowner x]",
+      "usage: GITHUB_TOKEN=... fanout <dry-run|apply|validate> --repo owner/name [--languages a,b] [--bundles x,y] [--templates owner/repo] [--codeowner x]",
     );
     process.exit(2);
   }

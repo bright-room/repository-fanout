@@ -30,7 +30,8 @@ export async function validateSource(source: TemplateSource): Promise<string[]> 
     }
     if (fragment === null || fragment === undefined) continue;
     for (const key of Object.keys(fragment as Record<string, unknown>)) {
-      if (!FRAGMENT_KEYS.has(key)) errors.push(`${dir}/fragment.json: unknown key "${key}" (typo?)`);
+      if (!FRAGMENT_KEYS.has(key))
+        errors.push(`${dir}/fragment.json: unknown key "${key}" (typo?)`);
     }
   }
 

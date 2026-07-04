@@ -10,11 +10,13 @@ import {
   GitHubError,
   type KeptFile,
   type PrState,
+  pathsToRead,
   planRetraction,
   RenovateParseError,
   RepoIO,
   recordDistribution,
-  resolveDesiredEntries,
+  resolveDesiredStep,
+  StructuredParseError,
   sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
@@ -118,12 +120,13 @@ export async function runChild(
 
     const desired = await step.do("resolve desired", async () =>
       retry(() =>
-        resolveDesiredEntries({
-          source: templates,
+        resolveDesiredStep(templates, {
           languages: p.languages,
           bundles: p.bundles,
           vars: p.vars,
           exclude: p.exclude,
+          repo: p.repo,
+          account: p.account,
         }),
       ),
     );
@@ -134,16 +137,16 @@ export async function runChild(
 
     const base = await step.do("default branch", () => retry(() => io.getDefaultBranch()));
     const desiredPaths = desired.map((d) => d.path);
-    const recordOnlyPaths = Object.keys(record.files).filter((x) => !desiredPaths.includes(x));
+    const readPaths = pathsToRead(desired, record);
     const actual = await step.do("read actual", () =>
-      retry(() => io.readActualFiles([...desiredPaths, ...recordOnlyPaths], base.branch)),
+      retry(() => io.readActualFiles(readPaths, base.branch)),
     );
 
     let changes: FileChange[];
     try {
       changes = computeChanges(desired, actual);
     } catch (err) {
-      if (err instanceof RenovateParseError) {
+      if (err instanceof RenovateParseError || err instanceof StructuredParseError) {
         await reportRepoFailure(env, p.runId, {
           account: p.account,
           repo: p.repo,

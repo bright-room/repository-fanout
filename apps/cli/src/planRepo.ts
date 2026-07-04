@@ -1,7 +1,7 @@
 import {
   computeChanges,
   type FileChange,
-  resolveDesiredEntries,
+  resolveDesiredStep,
   type TemplateSource,
 } from "@repository-fanout/core";
 
@@ -15,8 +15,7 @@ export interface PlanArgs {
 }
 
 export async function planRepo(args: PlanArgs): Promise<{ changes: FileChange[] }> {
-  const desired = await resolveDesiredEntries({
-    source: args.source,
+  const desired = await resolveDesiredStep(args.source, {
     languages: args.languages,
     bundles: args.bundles,
     vars: args.vars,

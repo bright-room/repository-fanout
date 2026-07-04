@@ -1,3 +1,10 @@
+export type { ReconcileDeclaration } from "./application/scenario/reconcileRepository.js";
+export {
+  computeChangesStep,
+  pathsToRead,
+  planRetractionStep,
+  resolveDesiredStep,
+} from "./application/scenario/reconcileRepository.js";
 export type {
   BranchAction,
   BranchInput,

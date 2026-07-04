@@ -50,3 +50,38 @@
 - [ ] **E1. `docs/runbook.md`**(repository-fanout): 手動再実行(`gh workflow run fanout-rekick.yml -R <structure repo> -f repos=...` / global は canonical-files の fanout-sync workflow_dispatch)・障害調査(実行から3日以内は `wrangler workflows instances describe`、以降は KV run 記録 90日)・Free プラン予算(全リポ一斉 ~17回/日)・CLI apply(最後の砦)・削除追従の挙動早見(消える条件/残る条件)
 - [ ] **E2. docs PR**: P3/P4 プラン+runbook+E2E 証拠を repository-fanout へ(ブランチ docs/p3-plan に積んで PR)
 - [ ] **E3. メモリ更新**: repository-fanout-status に完了状態を記録。SESSION_POSTMORTEM のバックログ(A/B 項目)の消化状況を明記
+
+---
+
+## 実施記録(2026-07-04 時点の引き継ぎ)
+
+### 完了済み
+
+- **Phase A 完了**: worker デプロイ(最終 Version cc762d32 = P1+P2+プレースホルダガード+gitignore 見出し `### xxx ###`)。3経路実証(org kick / global kick / kukv kick)。HMAC secrets 削除・org secrets 撤去(admin #51)。DISCORD_WEBHOOK_URL 設定済み(ユーザー)
+- **Phase B 完了**: v0 撤去(org #94 / kukv #65)・放置 PR close(canonical #1 / renovate-config #1)
+- **計画からの逸脱(良い方向)**: A7(PR#17 の close+作り直し)は不要になった — 新エンジンの再 kick で PR#17 が正しい内容に自動更新され、ユーザーがそのまま merge した
+- **切替中に発見・修正した実バグ**: codeowner のアカウント既定が未実装 → `{{codeowner}}` が素通しで配布(kukv #63 初版)。修正: TF 既定注入(kukv #64 / org #93)+エンジンの未置換ガード(rf #22)。教訓: 存在しない既定を計画が思い込みで前提にした
+- **混入事故と対処**: rf PR#23 に `.wrangler/`(miniflare ローカル状態・機密なしを確認)が git add -A で混入 → ブランチ履歴を書き直しクリーン化。教訓: **オーケストレーターも明示パスで git add する**
+- **E2E 証拠(Phase D の大半)**:
+  - UC1 初期配布: kukv/structure PR#63(merged・CODEOWNERS は修正後 `* @kukv`)/ org: repository-fanout PR#17(merged)
+  - UC2 正本→全リポ: global kick 202(runId 622441ab-808b-4168-9b8e-8bb4d8dcc50a)。描画変更(gitignore 見出し)が rf#24 / kukv#66 の最小差分 PR として全対象リポへ伝播
+  - D5 冪等性・手動再実行: 複数 kick で PR 増殖なし。workflow_dispatch の global rekick 実戦成功(run 28695149164)
+  - 配布記録: dist:bright-room:bright-room/repository-fanout に release.yml のハッシュ採用を確認(--remote で実測)
+  - D6: 全 Workflow instance が Completed・CPU 超過エラーなし(Free プラン)
+  - 認可外形: 無トークン 401 / 偽トークン 401 / GET 404
+
+### 未実施(次セッションへ)
+
+- **Phase C(ユーザー主導・段階展開)**: 下の言語調査表を参照。administrator 管理のメタ4リポは organization-structure の _fanout_manifest.tf に**静的宣言**で載せる(1アカウント=1 manifest=1送信者の不変条件のため。本文 Phase C 参照)
+- **D4 削除追従のフルサイクル実証**: 未着手(canonical へのテストファイル追加 PR も未作成)。手順案: languages/typescript/files/ に FANOUT_TEST_A/B を追加(配布先が repository-fanout に限定される)→配布→B を配布先で改変→正本から削除→ A=削除 PR / B=残置+PR 注記+Discord 通知 を確認
+- **Phase E**: runbook.md(手動 rekick・障害調査 3日/KV 90日・Free 予算 ~17run/日・CLI apply の制限・新アカウント追加手順・Phase C の宣言手順)+ この docs ブランチの PR 化
+- **開いたままの配布 PR**: rf **#24** / kukv **#66**(gitignore 新形式への収束。ユーザー merge 待ち)
+- 備考: canonical-files でユーザーが fragment 再整形を実施済み(canonical #7 merged・fix-fragments)。global kick は自動発火済みのはず
+
+### Phase C 用: 言語調査結果(scout-langs・2026-07-04・全26リポ・archived/fork なし)
+
+**bright-room(organization-structure 管理)**: aktive-storage=kotlin+oss / aktive-storage-example=kotlin / endpoint-gate=java+oss / idem=go+oss / bright-room=kotlin / mindstock=kotlin / garage-admin-console=kotlin(TSはe2eのみ・LICENSE無くossは保守的に見送り) / br-cluster=python(HCLはPacker・terraform非該当) / skill-test-sandbox=go / br-claude-plugins=[]/ canonical-files=[](自己配布・様子見後) / renovate-config=[]
+
+**bright-room(administrator 管理・静的宣言で)**: organization-structure / organization-structure-administrator / br-cloudflare-terraform / br-cluster-zitadel-terraform — 全て terraform
+
+**kukv(structure 管理)**: treedoc=rust+oss / liberal-ecstasy=typescript,rust / cloud-system-observability-demo=java / spring-boot-sandbox=java / portfolio=kotlin / coap-cbor-demo=go / markitdown-docker=python / bright-room-hatena-blog=[] / dotfiles=[] / os-setup=[] / postgresql-learning=[] / prompt-templates=[] / **template-java-api=java(is_template のため最終陣で単独確認)** / **test-repo=宣言しない(対象外)**

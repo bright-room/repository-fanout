@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 import { computeChanges } from "../../../../src/domain/model/desired/computeChanges.js";
+import { DesiredFile } from "../../../../src/domain/model/desired/desiredFile.js";
+import type { DesiredFileData } from "../../../../src/domain/model/desired/desiredFileData.js";
 import { BLOCK_END, BLOCK_START } from "../../../../src/domain/model/reconcile/managedBlock.js";
 import { RenovateParseError } from "../../../../src/reconcile/extendsField.js";
 import type { DesiredEntry } from "../../../../src/templates/types.js";
@@ -124,4 +126,56 @@ test("extends-field-retract is a no-op when file absent (新規作成しない)"
       {},
     ),
   ).toEqual([]);
+});
+
+const STRUCTURED: DesiredFileData = {
+  strategy: "structured-managed",
+  path: "mise.toml",
+  fileType: "toml",
+  managedPaths: { tools: { merge: "table" } },
+  data: { tools: { node: "22" } },
+  universe: { tools: ["node", "pnpm"] },
+  createContent: `[tools]\nnode = "22"\n`,
+};
+
+test("structured-managed: 不在なら createContent、存在ならマージ、同一なら no-op", () => {
+  expect(computeChanges([STRUCTURED], {})).toEqual([
+    { path: "mise.toml", content: `[tools]\nnode = "22"\n` },
+  ]);
+  const [change] = computeChanges([STRUCTURED], {
+    "mise.toml": `[tools]\nnode = "20"\nterraform = "1.9"\n`,
+  });
+  expect(change?.content).toContain(`node = "22"`);
+  expect(change?.content).toContain(`terraform = "1.9"`);
+  expect(computeChanges([STRUCTURED], { "mise.toml": `[tools]\nnode = "22"\n` })).toEqual([]);
+});
+
+test("structured-managed-retract: universe 由来だけ除去。ファイル不在は no-op", () => {
+  const retract: DesiredFileData = {
+    strategy: "structured-managed-retract",
+    path: "mise.toml",
+    fileType: "toml",
+    managedPaths: { tools: { merge: "table" } },
+    universe: { tools: ["node", "pnpm"] },
+  };
+  expect(computeChanges([retract], {})).toEqual([]);
+  const [change] = computeChanges([retract], {
+    "mise.toml": `[tools]\nnode = "22"\nterraform = "1.9"\n`,
+  });
+  expect(change?.content).not.toContain("node");
+  expect(change?.content).toContain(`terraform = "1.9"`);
+});
+
+test("retracted(): exclude 変換の知識は DesiredFile が持つ(spec v2 §5.5)", () => {
+  expect(DesiredFile.from(STRUCTURED).retracted()).toEqual({
+    strategy: "structured-managed-retract",
+    path: "mise.toml",
+    fileType: "toml",
+    managedPaths: { tools: { merge: "table" } },
+    universe: { tools: ["node", "pnpm"] },
+  });
+  expect(DesiredFile.from({ strategy: "replace", path: "a", content: "x" }).retracted()).toBeNull();
+  expect(
+    DesiredFile.from({ strategy: "managed-block", path: "b", blockContent: "x" }).retracted(),
+  ).toEqual({ strategy: "managed-block-retract", path: "b" });
 });

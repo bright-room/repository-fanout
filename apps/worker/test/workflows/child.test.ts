@@ -8,7 +8,8 @@ import {
   sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Env } from "../../src/index.js";
 import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
 import {
   type ChildParams,
@@ -89,6 +90,8 @@ const RELEASE = "changelog: {}\n";
 
 // MANIFESTS/RUNS KV は各テストで独立(vitest-pool-workers の isolated storage)
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe("runChild wiring", () => {
   it("distributes a new file, creates PR, records hash in dist record", async () => {
     const state: FakeRepoState = { files: {}, commits: [], prs: [], bodies: {} };
@@ -157,6 +160,17 @@ describe("runChild wiring", () => {
     expect(after.files["gone.yml"]).toBeUndefined();
   });
 
+  it("skips the dist record KV write when the record is unchanged (Free プラン write 予算節約)", async () => {
+    const state: FakeRepoState = { files: {}, commits: [], prs: [], bodies: {} };
+    const putSpy = vi.spyOn(env.MANIFESTS, "put");
+    await runChild(env, params, fakeStep, {
+      templates: memTemplates({}), // managed-block/extends-field 相当: 配布記録に残るものが無い
+      io: fakeRepo(state),
+    });
+    expect(state.commits).toHaveLength(0);
+    expect(putSpy).not.toHaveBeenCalled();
+  });
+
   it("already-converged replace file is adopted into the record (v0 取り込み)", async () => {
     const state: FakeRepoState = {
       files: { ".github/release.yml": RELEASE }, // v0 が配った同一内容
@@ -186,6 +200,35 @@ describe("runChild wiring", () => {
       io: fakeRepo(state),
     });
     expect(state.commits[0]!.changes).toEqual([{ path: ".gitignore", content: "repo-own\n" }]);
+  });
+
+  it("kept files trigger a Discord notification (spec §5.7)", async () => {
+    const rec: DistRecord = {
+      version: 1,
+      files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
+    };
+    await putDistRecord(env.MANIFESTS, "bright-room", "bright-room/target", rec);
+    const state: FakeRepoState = {
+      files: { "old.yml": "REPO-EDITED" },
+      commits: [],
+      prs: [],
+      bodies: {},
+    };
+    const fetchMock = vi.fn(
+      async (_url: string, _init: RequestInit) => new Response("", { status: 204 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const testEnv: Env = { ...env, DISCORD_WEBHOOK_URL: "https://discord.example/webhook" };
+    await runChild(testEnv, params, fakeStep, {
+      templates: memTemplates({ "base/files/.github/release.yml": RELEASE }),
+      io: fakeRepo(state),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://discord.example/webhook");
+    const body = JSON.parse(init.body as string) as { content: string };
+    expect(body.content).toContain("bright-room/target");
+    expect(body.content).toContain("old.yml (modified)");
   });
 
   it("failure is recorded and rethrown (Workflows リトライに委ねる)", async () => {

@@ -23,6 +23,7 @@ import { GitHubTemplateSource } from "../github/templateSource.js";
 import type { Env } from "../index.js";
 import { getDistRecord, putDistRecord } from "../kv/distStore.js";
 import { recordRepoResult } from "../kv/runStore.js";
+import { notifyKeptFiles } from "../notify.js";
 import { withRetry } from "../retry.js";
 
 const BRANCH = "chore/distribute-common-files";
@@ -157,6 +158,20 @@ export async function runChild(
       planRetraction({ record, desiredPaths, excluded: p.exclude, actual }),
     );
 
+    // 残置ファイルは「管理の引き渡し」イベントであり PR の有無(noop/write)と独立に
+    // 人間へ通知する(spec §5.7)。kept になったパスは次回 nextRecord から外れる
+    // ため候補にならず、この通知は同じパスについて一度きりで再発しない。
+    if (retraction.kept.length > 0) {
+      await step.do("notify kept", () =>
+        notifyKeptFiles(env.DISCORD_WEBHOOK_URL, {
+          runId: p.runId,
+          account: p.account,
+          repo: p.repo,
+          kept: retraction.kept,
+        }),
+      );
+    }
+
     // 記録の更新内容(spec §5.3 / §5.7 ブートストラップ):
     // replace   … 今回書く内容、または既に収束済みの内容を記録(v0 配布分の自然な取り込み)
     // create-only … 今回 fanout が新規作成した場合のみ記録(「fanout が書いた証拠」があるものだけ)
@@ -174,6 +189,9 @@ export async function runChild(
       }
     }
     const nextRecord = recordDistribution(retraction.record, distributed);
+    // managed-block/extends-field のみのリポは記録が常に空のままになりやすく、
+    // 無変化でも毎回 put すると Free プランの KV write 予算を浪費する。
+    const recordChanged = JSON.stringify(nextRecord) !== JSON.stringify(record);
 
     const hasDiff = changes.length > 0 || retraction.deletions.length > 0;
     const pr = await step.do("find pr", () => retry(() => io.findPr(BRANCH)));
@@ -187,9 +205,11 @@ export async function runChild(
         await step.do("delete branch", () => retry(() => io.deleteBranch(BRANCH)));
       }
       // 記録の掃除・引き渡しは PR 無しでも永続化する(消しすぎ防止に影響しない)
-      await step.do("update dist record", () =>
-        putDistRecord(env.MANIFESTS, p.account, p.repo, nextRecord),
-      );
+      if (recordChanged) {
+        await step.do("update dist record", () =>
+          putDistRecord(env.MANIFESTS, p.account, p.repo, nextRecord),
+        );
+      }
       await recordRepoResult(env.RUNS, p.runId, {
         account: p.account,
         repo: p.repo,
@@ -258,9 +278,11 @@ export async function runChild(
       await step.do("update pr body", () => retry(() => io.updatePrBody(n, body)));
     }
 
-    await step.do("update dist record", () =>
-      putDistRecord(env.MANIFESTS, p.account, p.repo, nextRecord),
-    );
+    if (recordChanged) {
+      await step.do("update dist record", () =>
+        putDistRecord(env.MANIFESTS, p.account, p.repo, nextRecord),
+      );
+    }
     await recordRepoResult(env.RUNS, p.runId, {
       account: p.account,
       repo: p.repo,

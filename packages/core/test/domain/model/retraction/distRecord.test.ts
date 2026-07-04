@@ -3,7 +3,7 @@ import {
   emptyDistRecord,
   parseDistRecord,
   recordDistribution,
-} from "../../src/reconcile/distRecord.js";
+} from "../../../../src/domain/model/retraction/distRecord.js";
 
 describe("parseDistRecord", () => {
   it("returns empty record for null (first run)", () => {

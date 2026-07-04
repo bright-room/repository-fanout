@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { DistRecord } from "../../src/reconcile/distRecord.js";
-import { planRetraction } from "../../src/reconcile/retraction.js";
-import { sha256Hex } from "../../src/util/hash.js";
+import type { DistRecord } from "../../../../src/domain/model/retraction/distRecord.js";
+import { planRetraction } from "../../../../src/domain/model/retraction/retractionPlan.js";
+import { sha256Hex } from "../../../../src/domain/type/hash.js";
 
 const record = async (path: string, content: string): Promise<DistRecord> => ({
   version: 1,

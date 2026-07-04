@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { createAppJwt } from "../../src/auth/jwt.js";
+import { createAppJwt } from "../../../../src/infrastructure/github/auth/jwt.js";
 
 async function genKeyPair(): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(

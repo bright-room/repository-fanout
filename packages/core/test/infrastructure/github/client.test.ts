@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { GitHubClient } from "../../src/github/client.js";
+import { GitHubClient } from "../../../src/infrastructure/github/client.js";
 
 function fakeFetch(handler: (url: string, init?: RequestInit) => Response) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>

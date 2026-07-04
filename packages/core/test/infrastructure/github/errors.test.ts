@@ -4,7 +4,7 @@ import {
   GitHubError,
   parseRateLimitRemaining,
   parseRetryAfter,
-} from "../../src/github/errors.js";
+} from "../../../src/infrastructure/github/errors.js";
 
 test("classifyStatus marks transient statuses retryable", () => {
   expect(classifyStatus(429)).toBe("retryable");

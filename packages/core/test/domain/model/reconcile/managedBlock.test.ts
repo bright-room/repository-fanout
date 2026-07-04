@@ -4,7 +4,7 @@ import {
   BLOCK_END,
   BLOCK_START,
   removeManagedBlock,
-} from "../../src/reconcile/block.js";
+} from "../../../../src/domain/model/reconcile/managedBlock.js";
 
 const block = (inner: string) => `${BLOCK_START}\n${inner}\n${BLOCK_END}`;
 

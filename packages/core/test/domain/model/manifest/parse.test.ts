@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { isNewerRevision, parseManifest } from "../../src/manifest/parse.js";
+import { isNewerRevision, parseManifest } from "../../../../src/domain/model/manifest/parse.js";
 
 const valid = {
   account: "bright-room",

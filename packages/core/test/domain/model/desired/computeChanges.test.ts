@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
-import { BLOCK_END, BLOCK_START } from "../../src/reconcile/block.js";
-import { computeChanges } from "../../src/reconcile/diff.js";
-import { RenovateParseError } from "../../src/reconcile/extendsField.js";
-import type { DesiredEntry } from "../../src/templates/types.js";
+import { computeChanges } from "../../../../src/domain/model/desired/computeChanges.js";
+import { BLOCK_END, BLOCK_START } from "../../../../src/domain/model/reconcile/managedBlock.js";
+import { RenovateParseError } from "../../../../src/reconcile/extendsField.js";
+import type { DesiredEntry } from "../../../../src/templates/types.js";
 
 const managed = ["github>o/rc", "github>o/rc:ts"];
 const universe = ["github>o/rc", "github>o/rc:ts", "github>o/rc:java"];

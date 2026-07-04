@@ -1,7 +1,7 @@
 import { expect, it, test, vi } from "vitest";
-import { GitHubClient } from "../../src/github/client.js";
-import { GitHubError } from "../../src/github/errors.js";
-import { RepoIO } from "../../src/github/repoIO.js";
+import { GitHubClient } from "../../../src/infrastructure/github/client.js";
+import { GitHubError } from "../../../src/infrastructure/github/errors.js";
+import { RepoIO } from "../../../src/infrastructure/github/repoIO.js";
 
 function client(map: Record<string, unknown>, notFound: string[] = []): GitHubClient {
   const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {

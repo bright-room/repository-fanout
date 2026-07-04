@@ -1,5 +1,8 @@
 import { expect, test, vi } from "vitest";
-import { createInstallationToken, listInstallations } from "../../src/auth/installation.js";
+import {
+  createInstallationToken,
+  listInstallations,
+} from "../../../../src/infrastructure/github/auth/installation.js";
 
 test("listInstallations maps account login + id", async () => {
   const fetchImpl = vi.fn(

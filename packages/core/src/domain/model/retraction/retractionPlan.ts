@@ -1,4 +1,4 @@
-import { sha256Hex } from "../util/hash.js";
+import { sha256Hex } from "../../type/hash.js";
 import type { DistRecord } from "./distRecord.js";
 
 export interface RetractionArgs {

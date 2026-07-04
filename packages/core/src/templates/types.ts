@@ -17,33 +17,5 @@ export interface FragmentManifest {
 /** fragment を提供する宣言軸のディレクトリ名 */
 export type FragmentAxis = "languages" | "bundles";
 
-/** テンプレ専用リポからの読み取りを抽象化（worker/cli は GitHub 経由、test はメモリ） */
-export interface TemplateSource {
-  readFile(path: string): Promise<string | null>;
-  listFiles(prefix: string): Promise<string[]>;
-  /** `${dir}/fragment.json` を読む（"base" | "languages/<name>" | "bundles/<name>"）。無ければ null */
-  readFragmentManifest(dir: string): Promise<FragmentManifest | null>;
-  /** `<axis>/` 直下のディレクトリ名一覧（universe 計算用） */
-  listNames(axis: FragmentAxis): Promise<string[]>;
-  /** `<axis>/<name>/` が存在するか（未知名検出用） */
-  nameExists(axis: FragmentAxis, name: string): Promise<boolean>;
-}
-
-/** resolve の出力。戦略ごとに必要な情報を持つ（actual とのマージは computeChanges が行う） */
-export type DesiredEntry =
-  | { strategy: "replace"; path: string; content: string }
-  | { strategy: "create-only"; path: string; content: string }
-  | { strategy: "managed-block"; path: string; blockContent: string }
-  | {
-      strategy: "extends-field";
-      path: string;
-      /** 宣言 languages から導出した管理 extends（正準順） */
-      managedExtends: string[];
-      /** base∪全 language の貢献（管理対象判定用） */
-      universe: string[];
-      /** ファイル不在時に新規作成する全文 */
-      createContent: string;
-    }
-  /** exclude 指定時: fanout の寄与ゼロへ収束させる(spec v2 §5.5) */
-  | { strategy: "managed-block-retract"; path: string }
-  | { strategy: "extends-field-retract"; path: string; universe: string[] };
+export type { TemplateSource } from "../domain/model/canonical/templateSource.js";
+export type { DesiredEntry } from "../domain/model/desired/desiredFileData.js";

@@ -1,11 +1,9 @@
-import type { DesiredEntry } from "../templates/types.js";
-import { applyManagedBlock, removeManagedBlock } from "./block.js";
-import { applyExtendsField } from "./extendsField.js";
+import { applyExtendsField } from "../../../reconcile/extendsField.js";
+import type { FileChange } from "../reconcile/fileChange.js";
+import { applyManagedBlock, removeManagedBlock } from "../reconcile/managedBlock.js";
+import type { DesiredEntry } from "./desiredFileData.js";
 
-export interface FileChange {
-  path: string;
-  content: string;
-}
+export type { FileChange };
 
 /**
  * desired（戦略付き）と実ファイル内容を突き合わせ、書き込むべき変更を返す。

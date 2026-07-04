@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256Hex } from "../../src/util/hash.js";
+import { sha256Hex } from "../../../src/domain/type/hash.js";
 
 describe("sha256Hex", () => {
   it("computes sha256 hex of utf-8 content", async () => {

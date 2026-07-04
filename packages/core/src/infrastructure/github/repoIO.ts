@@ -1,5 +1,5 @@
-import type { FileChange } from "../reconcile/diff.js";
-import { decodeBase64Utf8 } from "../util/base64.js";
+import type { FileChange } from "../../domain/model/reconcile/fileChange.js";
+import { decodeBase64Utf8 } from "../../domain/type/base64.js";
 import type { GitHubClient } from "./client.js";
 import { GitHubError } from "./errors.js";
 

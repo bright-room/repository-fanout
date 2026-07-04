@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { decideBranchAction } from "../../src/reconcile/branch.js";
+import { decideBranchAction } from "../../../../src/domain/model/branch/branchAction.js";
 
 test("diff + open PR -> update branch", () => {
   expect(decideBranchAction({ hasDiff: true, branchExists: true, pr: "open" })).toEqual({

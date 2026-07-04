@@ -1,4 +1,4 @@
-import { dedupePreserveOrder } from "../util/dedupe.js";
+import { dedupePreserveOrder } from "../domain/type/dedupe.js";
 
 export class RenovateParseError extends Error {
   constructor(readonly cause: unknown) {

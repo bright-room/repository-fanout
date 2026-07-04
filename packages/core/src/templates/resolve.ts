@@ -1,4 +1,4 @@
-import { dedupePreserveOrder } from "../util/dedupe.js";
+import { dedupePreserveOrder } from "../domain/type/dedupe.js";
 import { renderGitignore, substituteVars } from "./render.js";
 import { parseStrategyConfig } from "./strategyConfig.js";
 import type { DesiredEntry, FragmentManifest, TemplateSource } from "./types.js";

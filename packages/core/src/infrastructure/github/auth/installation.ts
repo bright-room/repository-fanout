@@ -1,4 +1,4 @@
-import { GitHubClient } from "../github/client.js";
+import { GitHubClient } from "../client.js";
 
 export interface Installation {
   id: number;

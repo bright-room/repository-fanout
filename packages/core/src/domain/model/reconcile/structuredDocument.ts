@@ -113,9 +113,12 @@ export class StructuredDocument {
    * (no-op。spec v3 C7: 正規化だけの書き換えをしない)。
    */
   mergedContent(spec: ManagedPathsSpec): string | null {
+    // yaml: 空 / コメントのみの文書は toJS() が null を返す(parse は許容済み)。
+    // ここで {} に倒さないと生 TypeError になり、per-repo failure でなく
+    // Workflow リトライへ化ける(StructuredParseError 経路の invariant 破り)。
     const values =
       this.fileType === "yaml"
-        ? ((this.parsed as Document).toJS() as Record<string, unknown>)
+        ? (((this.parsed as Document).toJS() as Record<string, unknown> | null) ?? {})
         : (this.parsed as Record<string, unknown>);
     const nextValues = new Map<string, unknown>();
     for (const key of Object.keys(spec.managedPaths)) {

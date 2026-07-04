@@ -107,6 +107,17 @@ test("yaml: 対象パスだけ更新し、対象外のコメントは保持", ()
   expect(next).not.toContain("- old");
 });
 
+test("yaml: 空 / コメントのみの実ファイルでも例外にせずマージ結果を返す(回帰)", () => {
+  // toJS() が null を返すケース。生 TypeError になると per-repo failure でなく
+  // Workflow リトライへ化けるため、{} として扱いマージを続行する。
+  const empty = StructuredDocument.parse("yaml", "x.yml", "");
+  const merged = empty.mergedContent(YAML_SPEC)!;
+  expect(merged).toContain("- a");
+  expect(merged).toContain("- b");
+  const commentOnly = StructuredDocument.parse("yaml", "x.yml", "# TODO\n");
+  expect(commentOnly.mergedContent(YAML_SPEC)).not.toBeNull();
+});
+
 test("createContent: 骨格なし = 管理データのみ / 骨格あり = 骨格へマージ", () => {
   expect(StructuredDocument.createContent("toml", "mise.toml", MISE)).toBe(
     `[tools]\nnode = "22.12.0"\n"npm:prettier" = "3.3.2"\n`,

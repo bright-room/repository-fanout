@@ -224,6 +224,12 @@ universe と retraction(v2 spec §5.2 の一般化):
 - 寄与が消えた管理エントリ/キーは削除、universe 外は不可侵 — `mergeExtends` の哲学そのまま
 - exclude 時は「寄与ゼロへ収束」(v2 spec §5.5 のまま。managed-text はブロック除去、managed-structured は universe 由来エントリ除去)
 
+ファイル不在時の新規作成:
+
+- profile が `template` を宣言していれば、その描画結果を骨格として managed_paths をマージした全文で作成する
+  (renovate.json の `$schema` のような管理外の初期キーを骨格側に置ける)
+- `template` 宣言が無ければ、管理データのみから正準生成する
+
 制約(fail fast):
 
 - 実ファイルがパース不能 → エラー(RenovateParseError の一般化)

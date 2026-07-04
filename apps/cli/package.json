@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "start": "tsx src/index.ts",
     "dry-run": "tsx src/index.ts dry-run",
-    "apply": "tsx src/index.ts apply"
+    "apply": "tsx src/index.ts apply",
+    "validate": "tsx src/index.ts validate"
   },
   "dependencies": { "@repository-fanout/core": "workspace:*" },
   "devDependencies": {

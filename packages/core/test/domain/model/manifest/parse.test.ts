@@ -111,6 +111,27 @@ test("parseManifest accepts bundles and rejects non-string entries", () => {
   ).toThrow(/bundles/i);
 });
 
+test("contents は vars の後継として受理(RepoEntry.vars に入る)", () => {
+  const m = parseManifest({
+    account: "o",
+    revision: 1,
+    sourceCommit: "c",
+    repositories: { r: { languages: ["typescript"], contents: { codeowner: "@org/team" } } },
+  });
+  expect(m.repositories.r?.vars).toEqual({ codeowner: "@org/team" });
+});
+
+test("contents と vars の両方宣言はエラー(曖昧さの排除)", () => {
+  expect(() =>
+    parseManifest({
+      account: "o",
+      revision: 1,
+      sourceCommit: "c",
+      repositories: { r: { languages: [], contents: { a: "1" }, vars: { a: "2" } } },
+    }),
+  ).toThrow(/either contents or vars/);
+});
+
 test("isNewerRevision enforces monotonic CAS", () => {
   expect(isNewerRevision(6, 5)).toBe(true);
   expect(isNewerRevision(5, 5)).toBe(false);

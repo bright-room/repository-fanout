@@ -43,15 +43,26 @@ export function parseManifest(input: unknown): Manifest {
       exclude = entry.exclude as string[];
     }
 
+    // contents は vars の後継(spec v3 §8)。移行期間中は両キーを受理するが、
+    // 両方の同時宣言はどちらが勝つか曖昧なのでエラー。Manifest は HTTP/KV 境界を
+    // 越える値なので plain + parse 関数のまま(core 構造設計 §4)。
+    let varsSource = entry.vars;
+    if (entry.contents !== undefined) {
+      if (entry.vars !== undefined) {
+        throw new Error(`manifest: ${name}: declare either contents or vars, not both`);
+      }
+      varsSource = entry.contents;
+    }
+
     let vars: Record<string, string> = {};
-    if (entry.vars !== undefined) {
-      if (typeof entry.vars !== "object" || entry.vars === null || Array.isArray(entry.vars)) {
+    if (varsSource !== undefined) {
+      if (typeof varsSource !== "object" || varsSource === null || Array.isArray(varsSource)) {
         throw new Error(`manifest: ${name}.vars must be an object of string values`);
       }
-      for (const [k, v] of Object.entries(entry.vars)) {
+      for (const [k, v] of Object.entries(varsSource)) {
         if (typeof v !== "string") throw new Error(`manifest: ${name}.vars.${k} must be a string`);
       }
-      vars = entry.vars as Record<string, string>;
+      vars = varsSource as Record<string, string>;
     }
 
     repositories[name] = { languages: entry.languages as string[], bundles, vars, exclude };

@@ -1,5 +1,5 @@
 # >>> repository-fanout managed >>>
-### JEtbrains IDEs ###
+### JetBrains IDEs ###
 .fleet/
 .idea/
 *.iws

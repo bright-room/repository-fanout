@@ -1,4 +1,24 @@
+# >>> repository-fanout managed >>>
+# OS / editor
+.DS_Store
+Thumbs.db
 .idea/
+.vscode/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# AI agents
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# node / typescript
 node_modules/
 dist/
+coverage/
+*.tsbuildinfo
 *.log
+# <<< repository-fanout managed <<<

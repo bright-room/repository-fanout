@@ -1,5 +1,6 @@
 import { expect, it, test, vi } from "vitest";
 import { GitHubClient } from "../../src/github/client.js";
+import { GitHubError } from "../../src/github/errors.js";
 import { RepoIO } from "../../src/github/repoIO.js";
 
 function client(map: Record<string, unknown>, notFound: string[] = []): GitHubClient {
@@ -37,6 +38,17 @@ test("readActualFiles returns map; missing paths omitted", async () => {
   });
   const got = await io.readActualFiles(["renovate.json", ".github/CODEOWNERS"], "main");
   expect(got).toEqual({ "renovate.json": "A\n" });
+});
+
+test("readActualFiles skips only 404s; other errors are not swallowed (spec: 消しすぎ防止)", async () => {
+  const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {
+    const u = String(url);
+    if (u.includes("/contents/gone.yml")) return new Response("nf", { status: 404 });
+    if (u.includes("/contents/broken.yml")) return new Response("boom", { status: 500 });
+    return new Response("nf", { status: 404 });
+  }) as unknown as typeof fetch;
+  const io = new RepoIO({ client: new GitHubClient({ token: "t", fetchImpl }), repo: "o/r" });
+  await expect(io.readActualFiles(["gone.yml", "broken.yml"], "main")).rejects.toThrow(GitHubError);
 });
 
 test("readActualFiles decodes multibyte UTF-8 content losslessly", async () => {

@@ -1,6 +1,7 @@
 import type { FileChange } from "../reconcile/diff.js";
 import { decodeBase64Utf8 } from "../util/base64.js";
 import type { GitHubClient } from "./client.js";
+import { GitHubError } from "./errors.js";
 
 export interface RepoIOOpts {
   client: GitHubClient;
@@ -38,8 +39,11 @@ export class RepoIO {
           this.p(`/contents/${encodeURI(path)}?ref=${encodeURIComponent(ref)}`),
         );
         out[path] = decodeBase64Utf8(r.content);
-      } catch {
-        /* 404 = 未配置 */
+      } catch (err) {
+        // 404 のみ「未配置」とみなす。5xx やネットワーク断まで未配置扱いすると
+        // 削除候補の実体確認が誤り、配布記録が静かに掃除されてしまう。
+        if (err instanceof GitHubError && err.status === 404) continue;
+        throw err;
       }
     }
     return out;

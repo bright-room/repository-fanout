@@ -1,19 +1,39 @@
 # >>> repository-fanout managed >>>
-### OS / editor ###
-.DS_Store
-Thumbs.db
+### JEtbrains IDEs ###
+.fleet/
 .idea/
+*.iws
+*.iml
+*.ipr
+
+### VSCode ###
 .vscode/
 
+### OS ###
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
 ### env ###
-.env
-.env.local
-.env.*.local
+.env*
+!.env.example
 
 ### AI agents ###
 .claude/settings.local.json
 .claude/worktrees/
 CLAUDE.local.md
+
+### Logfiles ###
+log/*
+!log/.gitkeep
+
+### Tempfiles ###
+.tmp/
+tmp/*
+!tmp/.gitkeep
+
+### Misc ###
+HELP.md
 
 ### node / typescript ###
 node_modules/

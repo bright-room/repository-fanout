@@ -73,10 +73,31 @@
 ### 未実施(次セッションへ)
 
 - **Phase C(ユーザー主導・段階展開)**: 下の言語調査表を参照。administrator 管理のメタ4リポは organization-structure の _fanout_manifest.tf に**静的宣言**で載せる(1アカウント=1 manifest=1送信者の不変条件のため。本文 Phase C 参照)
-- **D4 削除追従のフルサイクル実証**: 未着手(canonical へのテストファイル追加 PR も未作成)。手順案: languages/typescript/files/ に FANOUT_TEST_A/B を追加(配布先が repository-fanout に限定される)→配布→B を配布先で改変→正本から削除→ A=削除 PR / B=残置+PR 注記+Discord 通知 を確認
-- **Phase E**: runbook.md(手動 rekick・障害調査 3日/KV 90日・Free 予算 ~17run/日・CLI apply の制限・新アカウント追加手順・Phase C の宣言手順)+ この docs ブランチの PR 化
-- **開いたままの配布 PR**: rf **#24** / kukv **#66**(gitignore 新形式への収束。ユーザー merge 待ち)
-- 備考: canonical-files でユーザーが fragment 再整形を実施済み(canonical #7 merged・fix-fragments)。global kick は自動発火済みのはず
+- 既知の軽微課題: canonical-files base/fragment.json の section_comment に typo「JEtbrains」(→ JetBrains)。修正すると全対象リポの .gitignore 見出しに収束 PR が出る
+
+### D4 削除追従のフルサイクル実証(2026-07-04 完了・証拠)
+
+spec §2 完了条件 5 を実リポで実証。全経路が設計(spec v2 §5.4)どおりに動作:
+
+1. **配布**: canonical-files [#8](https://github.com/bright-room/canonical-files/pull/8)(languages/typescript/files/ に FANOUT_TEST_A/B 追加・validate green)→ global kick → rf [#25](https://github.com/bright-room/repository-fanout/pull/25) にテストファイル 2 件が追加され merge。KV `dist:` 記録に両ファイルのハッシュを確認(--remote 実測)
+2. **改変の仕込み**: rf [#26](https://github.com/bright-room/repository-fanout/pull/26) で B に 1 行追記(merge)
+3. **正本から削除**: canonical-files [#9](https://github.com/bright-room/canonical-files/pull/9)(merge)→ global kick → rf [#27](https://github.com/bright-room/repository-fanout/pull/27):
+   - **A(未改変・ハッシュ一致)= 削除が PR に入った**(diff は A の DELETED のみ)
+   - **B(改変済み・ハッシュ不一致)= 残置**。PR 本文に「改変されていたため削除せず残置(管理対象から外しました)」注記。子 Workflow の `notify kept` ステップ成功(instance 93a2c49a-510c-47d3-ac07-9a79a1a7e127)
+   - KV 記録: B は即時引き渡し(記録から除去)・A は merge 確認まで維持(冪等な再提案のための設計どおり)
+4. **掃除の完結**: rf#27 merge 後に rekick(run [28708457730](https://github.com/bright-room/organization-structure/actions/runs/28708457730))→ KV 記録から A が消え `release.yml` のみに(実測)。再配布 PR は立たず固定ブランチも不在=no-op 冪等
+5. **後片付け**: 残置された B の手動削除 = rf [#28](https://github.com/bright-room/repository-fanout/pull/28)
+
+### Phase E の進捗(2026-07-04)
+
+- **E1 完了**: `docs/runbook.md` を本ブランチに追加(コミット 6cea741)
+- **E2**: 本ブランチ(docs/p3-plan)の PR 化 = この記録の直後に実施
+- **E3**: メモリ更新 = docs PR 作成後に実施
+
+### 過去の申し送りの解消状況
+
+- rf #24 / kukv #66(gitignore 収束 PR)→ ユーザー merge 済み
+- canonical #7 の global kick → 自動発火し rf #25 として伝播・merge 済み
 
 ### Phase C 用: 言語調査結果(scout-langs・2026-07-04・全26リポ・archived/fork なし)
 

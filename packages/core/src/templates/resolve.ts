@@ -11,6 +11,18 @@ export interface ResolveArgs {
   exclude: string[];
 }
 
+// 未置換の {{var}} が残った描画結果を配布しない(spec v2 §5.8)。
+// 2026-07-04 kukv パイロットで vars に codeowner が無く CODEOWNERS が `* @{{codeowner}}` のまま
+// 配布された実バグの再発防止(kukv/structure PR#63)。
+function assertNoUnresolvedPlaceholders(dest: string, content: string): void {
+  const match = content.match(/\{\{[a-zA-Z0-9_]+\}\}/);
+  if (match) {
+    throw new Error(
+      `unresolved placeholder ${match[0]} in ${dest}(vars に値が無い。manifest の fanout_vars を確認)`,
+    );
+  }
+}
+
 function destPath(fullPath: string): string {
   return fullPath
     .replace(/^base\/files\//, "")
@@ -88,12 +100,14 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
           ),
           args.vars,
         );
+        assertNoUnresolvedPlaceholders(dest, createContent);
         entry = { strategy: "extends-field", path: dest, managedExtends, universe, createContent };
       } else if (special === "managed-block") {
         const rendered = substituteVars(
           raw.replace("{{gitignore}}", () => gitignoreBlock),
           args.vars,
         );
+        assertNoUnresolvedPlaceholders(dest, rendered);
         entry = {
           strategy: "managed-block",
           path: dest,
@@ -101,6 +115,7 @@ export async function resolveDesiredEntries(args: ResolveArgs): Promise<DesiredE
         };
       } else {
         const content = substituteVars(raw, args.vars);
+        assertNoUnresolvedPlaceholders(dest, content);
         entry = seeds
           ? { strategy: "create-only", path: dest, content }
           : { strategy: "replace", path: dest, content };

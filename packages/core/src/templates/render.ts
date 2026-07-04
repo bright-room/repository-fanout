@@ -2,7 +2,7 @@ import type { GitignoreSection } from "./types.js";
 
 /**
  * .gitignore の {{gitignore}} に入れるテキストを作る。
- * 各セクションは見出しコメント（`section_comment` に "# " を自動付与）+ 無視パターンで描画し、
+ * 各セクションは見出しコメント（`section_comment` を `### 見出し ###` 形式で描画）+ 無視パターンで描画し、
  * セクション間は空行1つで区切る。無視パターンは全セクション横断で重複除去（初出優先）。
  * 除去後に空になったセクションは見出しごと省く。
  */
@@ -17,7 +17,9 @@ export function renderGitignore(contributions: GitignoreSection[][]): string {
       fresh.push(ig);
     }
     if (fresh.length === 0) continue;
-    const lines = section.section_comment ? [`# ${section.section_comment}`, ...fresh] : fresh;
+    const lines = section.section_comment
+      ? [`### ${section.section_comment} ###`, ...fresh]
+      : fresh;
     blocks.push(lines.join("\n"));
   }
   return blocks.join("\n\n");

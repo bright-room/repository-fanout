@@ -22,3 +22,6 @@ coverage/
 *.tsbuildinfo
 *.log
 # <<< repository-fanout managed <<<
+
+# repo-own(fanout 管理外): wrangler のローカル状態
+.wrangler/

@@ -114,7 +114,7 @@ test("managed-block entries compose block content (vars + language lines)", asyn
   });
   const gi = entries.find((e) => e.path === ".gitignore")!;
   if (gi.strategy !== "managed-block") throw new Error("wrong strategy");
-  expect(gi.blockContent).toBe("# base\n.DS_Store\n\n# tf\n*.tfstate");
+  expect(gi.blockContent).toBe("### base ###\n.DS_Store\n\n### tf ###\n*.tfstate");
   const co = entries.find((e) => e.path === ".github/CODEOWNERS")!;
   if (co.strategy !== "managed-block") throw new Error("wrong strategy");
   expect(co.blockContent).toBe("* @o/team");

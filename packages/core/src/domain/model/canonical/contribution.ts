@@ -51,15 +51,22 @@ export class PathContributions {
     return this.items.length === 0;
   }
 
-  /** template 宣言 = 本文テンプレートの指定 + 配布トリガー(spec v3 §4.2)。2 つ以上は衝突 */
+  /**
+   * template 宣言 = 本文テンプレートの指定 + 配布トリガー(spec v3 §4.2)。
+   * 異なる名前の宣言は衝突エラー。同名なら複数 profile が宣言してよい
+   * (例: typescript / terraform がどちらも mise.toml.liquid を配布トリガーにする)。
+   */
   templateName(): string | undefined {
     const decls = this.items.filter((i) => i.contribution.template !== undefined);
-    if (decls.length > 1) {
+    const names = [...new Set(decls.map((d) => d.contribution.template as string))];
+    if (names.length > 1) {
       throw new Error(
-        `template collision: ${this.path} declared by ${decls.map((d) => d.profile).join(", ")}`,
+        `template collision: ${this.path} declared by ${decls
+          .map((d) => `${d.profile}(${String(d.contribution.template)})`)
+          .join(", ")}`,
       );
     }
-    return decls[0]?.contribution.template as string | undefined;
+    return names[0];
   }
 
   /** template キーを除いた寄与データの宣言順マージ(配列 concat / オブジェクト deep merge 後勝ち) */

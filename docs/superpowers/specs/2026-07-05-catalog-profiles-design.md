@@ -125,7 +125,7 @@ canonical-files/
 配布先パスをキーとし、値は寄与オブジェクト。`template` は予約キー:
 
 - **`template` の宣言 = そのパスの配布トリガー + 本文テンプレートの指定**
-- テンプレート描画ファイル(text/markdown、および replaced/create-only 全般)は、選択された profile のうち**ちょうど 1 つ**が `template` を宣言すること。0 個=エラー、2 個以上=衝突エラー(現行 path collision 検出の後継)
+- テンプレート描画ファイル(text/markdown、および replaced/create-only 全般)は、選択された profile の `template` 宣言が**ちょうど 1 種類**であること。0 個=エラー、異なる名前が 2 種類以上=衝突エラー(現行 path collision 検出の後継)。**同名なら複数 profile が宣言してよい**(create-only 等で複数 profile を配布トリガーにする用途。2026-07-05 追記)
 - managed-json/toml/yaml はテンプレート不要(寄与データ → 構造マージで直接生成)。データ寄与があれば配布トリガーになる
 - `template` 以外のキーは全てデータとして扱い、選択 profile 分を**宣言順(base → languages 宣言順 → bundles 宣言順)に連結**してテンプレート/マージへ渡す
 

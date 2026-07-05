@@ -12,7 +12,6 @@ import {
   type PrState,
   pathsToRead,
   planRetraction,
-  RenovateParseError,
   RepoIO,
   recordDistribution,
   resolveDesiredStep,
@@ -146,7 +145,7 @@ export async function runChild(
     try {
       changes = computeChanges(desired, actual);
     } catch (err) {
-      if (err instanceof RenovateParseError || err instanceof StructuredParseError) {
+      if (err instanceof StructuredParseError) {
         await reportRepoFailure(env, p.runId, {
           account: p.account,
           repo: p.repo,

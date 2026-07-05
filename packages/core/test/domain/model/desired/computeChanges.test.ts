@@ -3,23 +3,12 @@ import { computeChanges } from "../../../../src/domain/model/desired/computeChan
 import { DesiredFile } from "../../../../src/domain/model/desired/desiredFile.js";
 import type { DesiredFileData } from "../../../../src/domain/model/desired/desiredFileData.js";
 import { BLOCK_END, BLOCK_START } from "../../../../src/domain/model/reconcile/managedBlock.js";
-import { RenovateParseError } from "../../../../src/reconcile/extendsField.js";
-import type { DesiredEntry } from "../../../../src/templates/types.js";
-
-const managed = ["github>o/rc", "github>o/rc:ts"];
-const universe = ["github>o/rc", "github>o/rc:ts", "github>o/rc:java"];
+import type { DesiredEntry } from "../../../../src/domain/model/desired/desiredFileData.js";
 
 const entries: DesiredEntry[] = [
   { strategy: "replace", path: ".github/release.yml", content: "changelog: {}\n" },
   { strategy: "create-only", path: "STARTER.md", content: "starter\n" },
   { strategy: "managed-block", path: ".gitignore", blockContent: "a\nb" },
-  {
-    strategy: "extends-field",
-    path: "renovate.json",
-    managedExtends: managed,
-    universe,
-    createContent: "CREATE\n",
-  },
 ];
 
 test("replace: differs -> change; same -> noop", () => {
@@ -46,36 +35,6 @@ test("managed-block: updates only block, repo lines preserved; noop when identic
   expect(computeChanges([entries[2]!], { ".gitignore": c!.content })).toHaveLength(0);
 });
 
-test("extends-field: absent -> createContent; managed updated + repo-own preserved; noop when equal", () => {
-  expect(computeChanges([entries[3]!], {})[0]!.content).toBe("CREATE\n");
-
-  const actual = JSON.stringify(
-    { extends: ["github>o/rc", "github>o/rc:java", ":pre"], automerge: false },
-    null,
-    2,
-  );
-  const [c] = computeChanges([entries[3]!], { "renovate.json": actual });
-  const parsed = JSON.parse(c!.content);
-  expect(parsed.extends).toEqual(["github>o/rc", "github>o/rc:ts", ":pre"]);
-  expect(parsed.automerge).toBe(false);
-
-  expect(computeChanges([entries[3]!], { "renovate.json": c!.content })).toHaveLength(0);
-});
-
-test("extends-field: invalid json propagates RenovateParseError", () => {
-  expect(() => computeChanges([entries[3]!], { "renovate.json": "{ json5: true, }" })).toThrow(
-    RenovateParseError,
-  );
-});
-
-test("extends-field: non-object top-level json propagates RenovateParseError", () => {
-  for (const bad of ["null", "123", '"str"', "[1,2]"]) {
-    expect(() => computeChanges([entries[3]!], { "renovate.json": bad })).toThrow(
-      RenovateParseError,
-    );
-  }
-});
-
 test("throws (rather than silently no-op) on an unknown strategy", () => {
   const bogus = { strategy: "bogus", path: "x", content: "y" } as unknown as DesiredEntry;
   expect(() => computeChanges([bogus], {})).toThrow(/strategy/i);
@@ -100,32 +59,6 @@ test("managed-block-retract is a no-op when file absent", () => {
   expect(computeChanges([{ strategy: "managed-block-retract", path: ".gitignore" }], {})).toEqual(
     [],
   );
-});
-
-test("extends-field-retract removes universe entries, keeps repo-own ones", () => {
-  const actual = JSON.stringify({
-    extends: ["github>bright-room/renovate-config", "local>own"],
-  });
-  const changes = computeChanges(
-    [
-      {
-        strategy: "extends-field-retract",
-        path: "renovate.json",
-        universe: ["github>bright-room/renovate-config"],
-      },
-    ],
-    { "renovate.json": actual },
-  );
-  expect(JSON.parse(changes[0]!.content).extends).toEqual(["local>own"]);
-});
-
-test("extends-field-retract is a no-op when file absent (新規作成しない)", () => {
-  expect(
-    computeChanges(
-      [{ strategy: "extends-field-retract", path: "renovate.json", universe: ["x"] }],
-      {},
-    ),
-  ).toEqual([]);
 });
 
 const STRUCTURED: DesiredFileData = {

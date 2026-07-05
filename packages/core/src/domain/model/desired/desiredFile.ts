@@ -1,4 +1,3 @@
-import { applyExtendsField } from "../../../reconcile/extendsField.js"; // 凍結 v2 資産(P-e で削除)
 import type { FileChange } from "../reconcile/fileChange.js";
 import { applyManagedBlock, removeManagedBlock } from "../reconcile/managedBlock.js";
 import {
@@ -30,15 +29,6 @@ export abstract class DesiredFile {
         return new ManagedBlockFile(data.path, data.blockContent);
       case "managed-block-retract":
         return new ManagedBlockRetractFile(data.path);
-      case "extends-field":
-        return new ExtendsFieldFile(
-          data.path,
-          data.managedExtends,
-          data.universe,
-          data.createContent,
-        );
-      case "extends-field-retract":
-        return new ExtendsFieldRetractFile(data.path, data.universe);
       case "structured-managed":
         return new StructuredManagedFile(data.path, data.fileType, data, data.createContent);
       case "structured-managed-retract":
@@ -114,43 +104,6 @@ class ManagedBlockRetractFile extends DesiredFile {
   }
   retracted(): DesiredFileData {
     return { strategy: "managed-block-retract", path: this.path };
-  }
-}
-
-/** v2 凍結資産のラッパ(P-e で StructuredManagedFile に吸収して削除) */
-class ExtendsFieldFile extends DesiredFile {
-  constructor(
-    readonly path: string,
-    private readonly managedExtends: string[],
-    private readonly universe: string[],
-    private readonly createContent: string,
-  ) {
-    super();
-  }
-  applyTo(actual: string | undefined): FileChange | null {
-    if (actual === undefined) return { path: this.path, content: this.createContent };
-    const next = applyExtendsField(actual, this.managedExtends, this.universe);
-    return next !== null ? { path: this.path, content: next } : null;
-  }
-  retracted(): DesiredFileData {
-    return { strategy: "extends-field-retract", path: this.path, universe: this.universe };
-  }
-}
-
-class ExtendsFieldRetractFile extends DesiredFile {
-  constructor(
-    readonly path: string,
-    private readonly universe: string[],
-  ) {
-    super();
-  }
-  applyTo(actual: string | undefined): FileChange | null {
-    if (actual === undefined) return null; // 新規作成はしない
-    const next = applyExtendsField(actual, [], this.universe);
-    return next !== null ? { path: this.path, content: next } : null;
-  }
-  retracted(): DesiredFileData {
-    return { strategy: "extends-field-retract", path: this.path, universe: this.universe };
   }
 }
 

@@ -3,26 +3,39 @@ import { describe, expect, it } from "vitest";
 import type { RepoPortForApply } from "../src/applyRepo.js";
 import { applyRepo } from "../src/applyRepo.js";
 
-// planRepo.test.ts と同じインメモリ TemplateSource ヘルパを流用する
-// (base/files/.github/release.yml = "R\n" を返す source を用意)
-const source: TemplateSource = {
-  async readFile(p) {
-    if (p === "strategies.json") return "{}";
-    return p === "base/files/.github/release.yml" ? "R\n" : null;
-  },
-  async listFiles(prefix) {
-    return prefix === "base/files/" ? ["base/files/.github/release.yml"] : [];
-  },
-  async readFragmentManifest() {
-    return null;
-  },
-  async listNames() {
-    return [];
-  },
-  async nameExists() {
-    return true;
-  },
-};
+// planRepo.test.ts と同じ v3 レイアウトのインメモリ source ヘルパ。
+// interface 互換のため fragment 系はスタブで残す(P-e Task 9 で除去)。
+function v3Source(tree: Record<string, string>): TemplateSource {
+  return {
+    async readFile(p) {
+      return tree[p] ?? null;
+    },
+    async listFiles(prefix) {
+      return Object.keys(tree)
+        .filter((p) => p.startsWith(prefix))
+        .sort();
+    },
+    async readFragmentManifest() {
+      return null;
+    },
+    async listNames() {
+      return [];
+    },
+    async nameExists() {
+      return false;
+    },
+  };
+}
+
+const source = v3Source({
+  "catalog.json": JSON.stringify({
+    files: { ".github/release.yml": { file_type: "yaml", mode: "replaced" } },
+  }),
+  "profiles/base/contributes.json": JSON.stringify({
+    ".github/release.yml": { template: "release.yml.liquid" },
+  }),
+  "templates/release.yml.liquid": "R\n",
+});
 
 function fakeIo(state: {
   files: Record<string, string>;

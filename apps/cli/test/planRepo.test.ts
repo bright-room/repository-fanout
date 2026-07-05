@@ -2,69 +2,84 @@ import type { TemplateSource } from "@repository-fanout/core";
 import { expect, test } from "vitest";
 import { planRepo } from "../src/planRepo.js";
 
-const source: TemplateSource = {
-  async readFile(p) {
-    if (p === "strategies.json") return '{"renovate.json":"extends-field"}';
-    return p === "base/files/renovate.json" ? '{"extends":[{{renovate_extends}}]}' : null;
-  },
-  async listFiles(prefix) {
-    return prefix === "base/files/" ? ["base/files/renovate.json"] : [];
-  },
-  async readFragmentManifest(dir) {
-    return dir === "base" ? { renovate: ["github>o/renovate-config"] } : null;
-  },
-  async listNames() {
-    return [];
-  },
-  async nameExists() {
-    return true;
-  },
-};
+// v3 レイアウトのインメモリ source。interface 互換のため fragment 系はスタブで残す(P-e Task 9 で除去)。
+function v3Source(tree: Record<string, string>): TemplateSource {
+  return {
+    async readFile(p) {
+      return tree[p] ?? null;
+    },
+    async listFiles(prefix) {
+      return Object.keys(tree)
+        .filter((p) => p.startsWith(prefix))
+        .sort();
+    },
+    async readFragmentManifest() {
+      return null;
+    },
+    async listNames() {
+      return [];
+    },
+    async nameExists() {
+      return false;
+    },
+  };
+}
+
+const renovateSource = v3Source({
+  "catalog.json": JSON.stringify({
+    files: {
+      "renovate.json": {
+        file_type: "json",
+        mode: "managed",
+        managed_paths: { extends: { merge: "array" } },
+      },
+    },
+  }),
+  "profiles/base/contributes.json": JSON.stringify({
+    "renovate.json": { extends: ["github>o/renovate-config"] },
+  }),
+});
 
 test("planRepo reports changes vs actual", async () => {
   const plan = await planRepo({
-    source,
+    source: renovateSource,
     languages: [],
     bundles: [],
     vars: {},
     exclude: [],
-    readActual: async () => ({}), // 何も無い → 追加
+    readActual: async () => ({}), // 何も無い → 新規作成
   });
   expect(plan.changes.map((c) => c.path)).toEqual(["renovate.json"]);
-  expect(plan.changes[0]?.content).toBe('{"extends":["github>o/renovate-config"]}');
+  // structured-managed の createContent(skeleton 無し)は正準 JSON(2-space + 末尾改行)
+  expect(plan.changes[0]?.content).toBe(
+    '{\n  "extends": [\n    "github>o/renovate-config"\n  ]\n}\n',
+  );
 });
 
 test("planRepo no-op when actual matches", async () => {
   const plan = await planRepo({
-    source,
+    source: renovateSource,
     languages: [],
     bundles: [],
     vars: {},
     exclude: [],
+    // extends が意味的に同一なら正規化差は no-op
     readActual: async () => ({ "renovate.json": '{"extends":["github>o/renovate-config"]}' }),
   });
   expect(plan.changes).toEqual([]);
 });
 
 test("planRepo merges managed block with existing repo content", async () => {
-  const src: TemplateSource = {
-    async readFile(p) {
-      if (p === "strategies.json") return '{".gitignore":"managed-block"}';
-      return p === "base/files/.gitignore" ? "{{gitignore}}\n" : null;
-    },
-    async listFiles(prefix) {
-      return prefix === "base/files/" ? ["base/files/.gitignore"] : [];
-    },
-    async readFragmentManifest(dir) {
-      return dir === "base" ? { gitignore: [{ ignores: ["a"] }] } : null;
-    },
-    async listNames() {
-      return [];
-    },
-    async nameExists() {
-      return true;
-    },
-  };
+  const src = v3Source({
+    "catalog.json": JSON.stringify({
+      files: { ".gitignore": { file_type: "text", mode: "managed" } },
+    }),
+    "profiles/base/contributes.json": JSON.stringify({
+      ".gitignore": { template: "gitignore.liquid", sections: [{ comment: "base", ignores: ["a"] }] },
+    }),
+    "templates/gitignore.liquid":
+      '{% assign s = contributions.sections[0] %}{{ s.ignores | join: "\n" }}',
+  });
   const plan = await planRepo({
     source: src,
     languages: [],

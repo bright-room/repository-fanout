@@ -45,6 +45,45 @@ describe("runParent wiring", () => {
     });
   });
 
+  it("spawns a base-only entry (empty languages/bundles) and forwards contents/exclude", async () => {
+    // base-only(fanout = {})= languages/bundles 空。parent が長さでフィルタせず spawn し、
+    // contents / exclude を child にそのまま渡すことを確認する。
+    await env.MANIFESTS.put(
+      "manifest:acc",
+      JSON.stringify({
+        account: "acc",
+        revision: 1,
+        sourceCommit: "c0ffee",
+        repositories: {
+          "base-only": {
+            languages: [],
+            bundles: [],
+            contents: { codeowner: "@acc/team" },
+            exclude: [".github/CODEOWNERS"],
+          },
+        },
+      }),
+    );
+    const created: Array<{ params: unknown }> = [];
+    const testEnv = {
+      ...env,
+      CHILD: { create: async (a: { params: unknown }) => void created.push(a) },
+    };
+    await runParent(testEnv as never, { runId: "run-b", account: "acc" }, fakeStep(), {
+      listInstallations: async () => [inst("acc", 42)],
+    });
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({
+      params: {
+        repo: "acc/base-only",
+        languages: [],
+        bundles: [],
+        vars: { codeowner: "@acc/team" },
+        exclude: [".github/CODEOWNERS"],
+      },
+    });
+  });
+
   it("repos filter narrows the spawn list (部分再試行。spec §6.4)", async () => {
     await env.MANIFESTS.put("manifest:acc", JSON.stringify(manifest("acc", ["r1", "r2", "r3"])));
     const created: Array<{ params: { repo: string } }> = [];

@@ -29,7 +29,7 @@ export async function validateSource(source: TemplateSource): Promise<string[]> 
         source,
         languages: c.languages,
         bundles: [],
-        vars: { codeowner: "validate/dummy" },
+        vars: { codeowner: "validate/dummy", license_holder: "validate/dummy" },
         exclude: [],
       });
     } catch (e) {

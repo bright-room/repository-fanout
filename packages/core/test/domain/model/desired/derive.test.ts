@@ -13,15 +13,6 @@ function memorySourceV3(files: Record<string, string>): TemplateSource {
         .filter((p) => p.startsWith(prefix))
         .sort();
     },
-    async readFragmentManifest() {
-      throw new Error("not used in v3");
-    },
-    async listNames() {
-      throw new Error("not used in v3");
-    },
-    async nameExists() {
-      throw new Error("not used in v3");
-    },
   };
 }
 

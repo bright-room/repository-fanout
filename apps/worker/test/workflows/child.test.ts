@@ -52,9 +52,6 @@ function memTemplates(files: Record<string, string>): TemplateSource {
       Object.keys(tree)
         .filter((p) => p.startsWith(prefix))
         .sort(),
-    readFragmentManifest: async () => null,
-    listNames: async () => [],
-    nameExists: async () => false,
   };
 }
 

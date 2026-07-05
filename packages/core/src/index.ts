@@ -85,4 +85,3 @@ export {
 } from "./infrastructure/github/errors.js";
 export type { PrInfo, RepoIOOpts } from "./infrastructure/github/repoIO.js";
 export { RepoIO } from "./infrastructure/github/repoIO.js";
-export type { FragmentAxis, FragmentManifest, GitignoreSection } from "./templates/types.js";

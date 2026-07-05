@@ -4,7 +4,6 @@ import type { RepoPortForApply } from "../src/applyRepo.js";
 import { applyRepo } from "../src/applyRepo.js";
 
 // planRepo.test.ts と同じ v3 レイアウトのインメモリ source ヘルパ。
-// interface 互換のため fragment 系はスタブで残す(P-e Task 9 で除去)。
 function v3Source(tree: Record<string, string>): TemplateSource {
   return {
     async readFile(p) {
@@ -14,15 +13,6 @@ function v3Source(tree: Record<string, string>): TemplateSource {
       return Object.keys(tree)
         .filter((p) => p.startsWith(prefix))
         .sort();
-    },
-    async readFragmentManifest() {
-      return null;
-    },
-    async listNames() {
-      return [];
-    },
-    async nameExists() {
-      return false;
     },
   };
 }

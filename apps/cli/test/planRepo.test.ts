@@ -2,7 +2,7 @@ import type { TemplateSource } from "@repository-fanout/core";
 import { expect, test } from "vitest";
 import { planRepo } from "../src/planRepo.js";
 
-// v3 レイアウトのインメモリ source。interface 互換のため fragment 系はスタブで残す(P-e Task 9 で除去)。
+// v3 レイアウトのインメモリ source。
 function v3Source(tree: Record<string, string>): TemplateSource {
   return {
     async readFile(p) {
@@ -12,15 +12,6 @@ function v3Source(tree: Record<string, string>): TemplateSource {
       return Object.keys(tree)
         .filter((p) => p.startsWith(prefix))
         .sort();
-    },
-    async readFragmentManifest() {
-      return null;
-    },
-    async listNames() {
-      return [];
-    },
-    async nameExists() {
-      return false;
     },
   };
 }

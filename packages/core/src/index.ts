@@ -69,6 +69,7 @@ export { planRetraction } from "./domain/model/retraction/retractionPlan.js";
 export { decodeBase64Utf8 } from "./domain/type/base64.js";
 export { sha256Hex } from "./domain/type/hash.js";
 export { deepEqual, isPlainObject } from "./domain/type/object.js";
+export { parseYaml } from "./domain/type/yaml.js";
 export type { Installation } from "./infrastructure/github/auth/installation.js";
 export {
   createInstallationToken,

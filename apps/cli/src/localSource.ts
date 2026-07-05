@@ -5,8 +5,7 @@ import type { TemplateSource } from "@repository-fanout/core";
 
 /**
  * ローカルディレクトリ(canonical-files の checkout)を TemplateSource として扱う。
- * validate コマンド(CI での正本検証)用。GitHubTemplateSource と異なり
- * fragment.json の JSON 破損は null に握りつぶさず throw する(検証で検出するため)。
+ * validate コマンド(CI での正本検証)用。読み取り失敗(不在含む)は null を返す。
  */
 export function localSource(root: string): TemplateSource {
   const read = async (p: string): Promise<string | null> => {

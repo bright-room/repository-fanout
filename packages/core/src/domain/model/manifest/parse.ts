@@ -46,7 +46,7 @@ export function parseManifest(input: unknown): Manifest {
     // contents はリポ個別値(spec v3 §8)。旧 vars キーは P-e で受理終了。
     // 残存 vars を silent-ignore すると CODEOWNERS 等が無値で壊れるため fail loud。
     if (entry.vars !== undefined) {
-      throw new Error(`manifest: ${name}: 'vars' は廃止。'contents' を使うこと(spec v3 §8)`);
+      throw new Error(`manifest: ${name}: 'vars' is removed; use 'contents' (spec v3 §8)`);
     }
     let vars: Record<string, string> = {};
     if (entry.contents !== undefined) {

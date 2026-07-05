@@ -1,8 +1,4 @@
-import {
-  type GitHubClient,
-  GitHubError,
-  type TemplateSource,
-} from "@repository-fanout/core";
+import { type GitHubClient, GitHubError, type TemplateSource } from "@repository-fanout/core";
 
 /**
  * GitHub Contents API は base64(UTF-8 bytes) を改行入りで返す。

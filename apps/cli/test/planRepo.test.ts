@@ -66,7 +66,10 @@ test("planRepo merges managed block with existing repo content", async () => {
       files: { ".gitignore": { file_type: "text", mode: "managed" } },
     }),
     "profiles/base/contributes.json": JSON.stringify({
-      ".gitignore": { template: "gitignore.liquid", sections: [{ comment: "base", ignores: ["a"] }] },
+      ".gitignore": {
+        template: "gitignore.liquid",
+        sections: [{ comment: "base", ignores: ["a"] }],
+      },
     }),
     "templates/gitignore.liquid":
       '{% assign s = contributions.sections[0] %}{{ s.ignores | join: "\n" }}',

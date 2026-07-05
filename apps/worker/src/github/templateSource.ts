@@ -1,8 +1,4 @@
-import {
-  decodeBase64Utf8,
-  type GitHubClient,
-  type TemplateSource,
-} from "@repository-fanout/core";
+import { decodeBase64Utf8, type GitHubClient, type TemplateSource } from "@repository-fanout/core";
 
 export interface TemplateSourceOpts {
   client: GitHubClient;

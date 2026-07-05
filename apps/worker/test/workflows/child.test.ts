@@ -6,7 +6,7 @@ import {
   sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/index.js";
 import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
 import {

@@ -1,0 +1,8 @@
+{
+  ".gitignore": {
+    "template": "gitignore.liquid",
+    "sections": [{ "comment": "base", "ignores": [".DS_Store"] }]
+  },
+  ".github/CODEOWNERS": { "template": "codeowners.liquid" },
+  "renovate.json": { "extends": ["github>o/renovate-config"] }
+}

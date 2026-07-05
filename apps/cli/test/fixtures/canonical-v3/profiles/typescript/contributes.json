@@ -1,0 +1,4 @@
+{
+  ".gitignore": { "sections": [{ "comment": "node", "ignores": ["node_modules/"] }] },
+  "renovate.json": { "extends": ["github>o/renovate-config:typescript"] }
+}

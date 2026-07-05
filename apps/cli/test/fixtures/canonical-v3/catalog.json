@@ -1,0 +1,11 @@
+{
+  "files": {
+    ".gitignore": { "file_type": "text", "mode": "managed" },
+    ".github/CODEOWNERS": { "file_type": "text", "mode": "managed" },
+    "renovate.json": {
+      "file_type": "json",
+      "mode": "managed",
+      "managed_paths": { "extends": { "merge": "array" } }
+    }
+  }
+}

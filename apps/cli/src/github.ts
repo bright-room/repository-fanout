@@ -1,9 +1,4 @@
-import {
-  type FragmentManifest,
-  type GitHubClient,
-  GitHubError,
-  type TemplateSource,
-} from "@repository-fanout/core";
+import { type GitHubClient, GitHubError, type TemplateSource } from "@repository-fanout/core";
 
 /**
  * GitHub Contents API は base64(UTF-8 bytes) を改行入りで返す。
@@ -43,22 +38,6 @@ export function templateSource(client: GitHubClient, repo: string): TemplateSour
     },
     async listFiles(prefix) {
       return (await tree()).filter((p) => p.startsWith(prefix));
-    },
-    async readFragmentManifest(dir) {
-      const raw = await read(`${dir}/fragment.json`);
-      return raw ? (JSON.parse(raw) as FragmentManifest) : null;
-    },
-    async listNames(axis) {
-      const names = new Set<string>();
-      const re = new RegExp(`^${axis}/([^/]+)/`);
-      for (const p of await tree()) {
-        const m = re.exec(p);
-        if (m) names.add(m[1]!);
-      }
-      return [...names];
-    },
-    async nameExists(axis, name) {
-      return (await tree()).some((p) => p.startsWith(`${axis}/${name}/`));
     },
   };
 }

@@ -43,29 +43,25 @@ export function parseManifest(input: unknown): Manifest {
       exclude = entry.exclude as string[];
     }
 
-    // contents は vars の後継(spec v3 §8)。移行期間中は両キーを受理するが、
-    // 両方の同時宣言はどちらが勝つか曖昧なのでエラー。Manifest は HTTP/KV 境界を
-    // 越える値なので plain + parse 関数のまま(core 構造設計 §4)。
-    let varsSource = entry.vars;
+    // contents はリポ個別値(spec v3 §8)。旧 vars キーは P-e で受理終了。
+    // 残存 vars を silent-ignore すると CODEOWNERS 等が無値で壊れるため fail loud。
+    if (entry.vars !== undefined) {
+      throw new Error(`manifest: ${name}: 'vars' is removed; use 'contents' (spec v3 §8)`);
+    }
+    let contents: Record<string, string> = {};
     if (entry.contents !== undefined) {
-      if (entry.vars !== undefined) {
-        throw new Error(`manifest: ${name}: declare either contents or vars, not both`);
+      const c = entry.contents;
+      if (typeof c !== "object" || c === null || Array.isArray(c)) {
+        throw new Error(`manifest: ${name}.contents must be an object of string values`);
       }
-      varsSource = entry.contents;
+      for (const [k, v] of Object.entries(c)) {
+        if (typeof v !== "string")
+          throw new Error(`manifest: ${name}.contents.${k} must be a string`);
+      }
+      contents = c as Record<string, string>;
     }
 
-    let vars: Record<string, string> = {};
-    if (varsSource !== undefined) {
-      if (typeof varsSource !== "object" || varsSource === null || Array.isArray(varsSource)) {
-        throw new Error(`manifest: ${name}.vars must be an object of string values`);
-      }
-      for (const [k, v] of Object.entries(varsSource)) {
-        if (typeof v !== "string") throw new Error(`manifest: ${name}.vars.${k} must be a string`);
-      }
-      vars = varsSource as Record<string, string>;
-    }
-
-    repositories[name] = { languages: entry.languages as string[], bundles, vars, exclude };
+    repositories[name] = { languages: entry.languages as string[], bundles, contents, exclude };
   }
   return { account: o.account, revision: o.revision, sourceCommit: o.sourceCommit, repositories };
 }

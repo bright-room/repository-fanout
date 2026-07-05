@@ -1,0 +1,2 @@
+{% capture nl %}
+{% endcapture %}{% assign sections = contributions.sections | cross_dedupe: "ignores" %}{% for s in sections %}### {{ s.comment }} ###{{ nl }}{{ s.ignores | join: nl }}{% endfor %}

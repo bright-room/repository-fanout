@@ -3,12 +3,10 @@ import {
   BLOCK_END,
   BLOCK_START,
   type DistRecord,
-  type FragmentAxis,
-  type FragmentManifest,
   sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/index.js";
 import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
 import {
@@ -24,20 +22,35 @@ const fakeStep: StepLike = {
   sleep: async () => {},
 };
 
-/** インメモリ TemplateSource: base に release.yml(replace)のみの最小正本 */
+/**
+ * インメモリ TemplateSource(v3 catalog レイアウト)。
+ * `base/files/<path>` キーの有無で「その path を base profile が寄与するか」を表す。
+ */
 function memTemplates(files: Record<string, string>): TemplateSource {
-  const strategies = JSON.stringify({
-    "renovate.json": "extends-field",
-    ".gitignore": "managed-block",
-    ".github/CODEOWNERS": "managed-block",
-  });
+  const contributes: Record<string, unknown> = {};
+  if ("base/files/.github/release.yml" in files) {
+    contributes[".github/release.yml"] = { template: "release.yml.liquid" };
+  }
+  if ("base/files/.gitignore" in files) {
+    contributes[".gitignore"] = { template: "gitignore.liquid" };
+  }
+  const tree: Record<string, string> = {
+    "catalog.json": JSON.stringify({
+      files: {
+        ".github/release.yml": { file_type: "yaml", mode: "replaced" },
+        ".gitignore": { file_type: "text", mode: "managed" },
+      },
+    }),
+    "profiles/base/contributes.json": JSON.stringify(contributes),
+    "templates/release.yml.liquid": files["base/files/.github/release.yml"] ?? "",
+    "templates/gitignore.liquid": "managed",
+  };
   return {
-    readFile: async (p) => (p === "strategies.json" ? strategies : (files[p] ?? null)),
-    listFiles: async (prefix) => Object.keys(files).filter((p) => p.startsWith(prefix)),
-    readFragmentManifest: async (dir): Promise<FragmentManifest | null> =>
-      dir === "base" ? {} : null,
-    listNames: async (_axis: FragmentAxis) => [],
-    nameExists: async () => false,
+    readFile: async (p) => tree[p] ?? null,
+    listFiles: async (prefix) =>
+      Object.keys(tree)
+        .filter((p) => p.startsWith(prefix))
+        .sort(),
   };
 }
 

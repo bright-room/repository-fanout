@@ -85,7 +85,3 @@ export {
 } from "./infrastructure/github/errors.js";
 export type { PrInfo, RepoIOOpts } from "./infrastructure/github/repoIO.js";
 export { RepoIO } from "./infrastructure/github/repoIO.js";
-export { applyExtendsField, mergeExtends, RenovateParseError } from "./reconcile/extendsField.js";
-export { renderGitignore, substituteVars } from "./templates/render.js";
-export { resolveDesiredEntries } from "./templates/resolve.js";
-export type { FragmentAxis, FragmentManifest, GitignoreSection } from "./templates/types.js";

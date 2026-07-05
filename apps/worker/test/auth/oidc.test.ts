@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { OidcError, resetJwksCache, verifyGitHubOidc } from "../../src/auth/oidc.js";
+import { resetJwksCache, verifyGitHubOidc } from "../../src/auth/oidc.js";
 import { AUD, claims, jwk, jwksFetch, makeToken, regenerateOidcKeyPair } from "../helpers/oidc.js";
 
 beforeEach(async () => {

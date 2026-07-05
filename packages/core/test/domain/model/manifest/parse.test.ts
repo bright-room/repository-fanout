@@ -8,7 +8,7 @@ const valid = {
   repositories: {
     "endpoint-gate": {
       languages: ["terraform"],
-      vars: { codeowner: "bright-room/br-maintainers" },
+      contents: { codeowner: "bright-room/br-maintainers" },
     },
   },
 };
@@ -61,26 +61,26 @@ test("parseManifest rejects non-string exclude entries", () => {
   ).toThrow(/exclude/i);
 });
 
-test("parseManifest rejects vars that is not an object", () => {
+test("parseManifest rejects contents that is not an object", () => {
   expect(() =>
     parseManifest({
       account: "kukv",
       revision: 1,
       sourceCommit: "x",
-      repositories: { dotfiles: { languages: [], vars: "oops" } },
+      repositories: { dotfiles: { languages: [], contents: "oops" } },
     }),
-  ).toThrow(/vars/i);
+  ).toThrow(/contents/i);
 });
 
-test("parseManifest rejects vars with non-string values", () => {
+test("parseManifest rejects contents with non-string values", () => {
   expect(() =>
     parseManifest({
       account: "kukv",
       revision: 1,
       sourceCommit: "x",
-      repositories: { dotfiles: { languages: [], vars: { codeowner: 5 } } },
+      repositories: { dotfiles: { languages: [], contents: { codeowner: 5 } } },
     }),
-  ).toThrow(/vars/i);
+  ).toThrow(/contents/i);
 });
 
 test("parseManifest defaults bundles to []", () => {
@@ -121,15 +121,15 @@ test("contents は vars の後継として受理(RepoEntry.vars に入る)", () 
   expect(m.repositories.r?.vars).toEqual({ codeowner: "@org/team" });
 });
 
-test("contents と vars の両方宣言はエラー(曖昧さの排除)", () => {
+test("parseManifest は廃止された vars キーを fail loud で拒否する", () => {
   expect(() =>
     parseManifest({
       account: "o",
       revision: 1,
       sourceCommit: "c",
-      repositories: { r: { languages: [], contents: { a: "1" }, vars: { a: "2" } } },
+      repositories: { r: { languages: [], vars: { a: "1" } } },
     }),
-  ).toThrow(/either contents or vars/);
+  ).toThrow(/vars/);
 });
 
 test("isNewerRevision enforces monotonic CAS", () => {

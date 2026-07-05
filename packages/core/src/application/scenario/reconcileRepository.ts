@@ -19,7 +19,7 @@ export interface ReconcileDeclaration {
   account?: string;
 }
 
-/** step 1: 望ましい状態の導出(catalog.json の有無で新旧自動切替) */
+/** step 1: 望ましい状態の導出(v3 catalog/profiles から) */
 export function resolveDesiredStep(
   source: TemplateSource,
   decl: ReconcileDeclaration,

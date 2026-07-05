@@ -25,7 +25,6 @@ const fakeStep: StepLike = {
 /**
  * インメモリ TemplateSource(v3 catalog レイアウト)。
  * `base/files/<path>` キーの有無で「その path を base profile が寄与するか」を表す。
- * (interface 互換のため fragment 系はスタブ。P-e Task 9 で除去。)
  */
 function memTemplates(files: Record<string, string>): TemplateSource {
   const contributes: Record<string, unknown> = {};

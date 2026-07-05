@@ -1,6 +1,11 @@
 import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
-import { getManifest, listManifests, putManifestCas } from "../../src/kv/manifestStore.js";
+import {
+  getManifest,
+  getManifestSafe,
+  listManifests,
+  putManifestCas,
+} from "../../src/kv/manifestStore.js";
 
 const m = (rev: number) => ({
   account: "bright-room",
@@ -54,5 +59,40 @@ describe("putManifestCas revision semantics (spec v2 §6.1)", () => {
       stored: false,
       stale: true,
     });
+  });
+});
+
+describe("壊れた保存 manifest への耐性(self-heal。vars デッドロック再発防止)", () => {
+  // 現行 parseManifest が拒否する旧スキーマ(vars)を直接 KV に書く
+  const corrupt = (account: string) =>
+    JSON.stringify({
+      account,
+      revision: 100,
+      sourceCommit: "c",
+      repositories: { r: { languages: [], vars: { codeowner: "x" } } },
+    });
+
+  test("getManifestSafe は壊れた保存 manifest を null 扱い(getManifest は throw)", async () => {
+    await env.MANIFESTS.put("manifest:heal-safe", corrupt("heal-safe"));
+    await expect(getManifest(env.MANIFESTS, "heal-safe")).rejects.toThrow(/vars/);
+    expect(await getManifestSafe(env.MANIFESTS, "heal-safe")).toBeNull();
+  });
+
+  test("putManifestCas は壊れた current を上書きできる(書き込みがデッドロックしない)", async () => {
+    await env.MANIFESTS.put("manifest:heal-write", corrupt("heal-write"));
+    // 壊れた current は「無し」扱いなので、revision に関係なく上書きできる
+    expect(await putManifestCas(env.MANIFESTS, { ...m(1), account: "heal-write" })).toEqual({
+      stored: true,
+      stale: false,
+    });
+    expect((await getManifest(env.MANIFESTS, "heal-write"))?.revision).toBe(1);
+  });
+
+  test("listManifests は壊れた 1 件を巻き添えにせず健全分を返す", async () => {
+    await env.MANIFESTS.put("manifest:heal-list-bad", corrupt("heal-list-bad"));
+    await putManifestCas(env.MANIFESTS, { ...m(1), account: "heal-list-good" });
+    const names = (await listManifests(env.MANIFESTS)).map((x) => x.account);
+    expect(names).toContain("heal-list-good");
+    expect(names).not.toContain("heal-list-bad");
   });
 });

@@ -5,7 +5,7 @@ import {
   parseManifest,
 } from "@repository-fanout/core";
 import { OidcError, verifyGitHubOidc } from "./auth/oidc.js";
-import { getManifest, putManifestCas } from "./kv/manifestStore.js";
+import { getManifestSafe, putManifestCas } from "./kv/manifestStore.js";
 
 export interface Env {
   MANIFESTS: KVNamespace;
@@ -114,10 +114,21 @@ export default {
         return new Response(`bad manifest: ${String(e)}`, { status: 422 });
       }
       if (manifest.account !== account) return new Response("account mismatch", { status: 422 });
-      const put = await putManifestCas(env.MANIFESTS, manifest);
+      let put: Awaited<ReturnType<typeof putManifestCas>>;
+      try {
+        put = await putManifestCas(env.MANIFESTS, manifest);
+      } catch (e) {
+        // 保存失敗を unhandled で投げると Cloudflare 1101(不透明)になる。読めるエラーで返す。
+        return new Response(
+          `manifest store failed: ${e instanceof Error ? e.message : String(e)}`,
+          {
+            status: 500,
+          },
+        );
+      }
       // 厳密に古い revision のみ拒否。同一 revision は再実行要求として受理(spec v2 §6.1)
       if (put.stale) return new Response("stale revision", { status: 409 });
-    } else if ((await getManifest(env.MANIFESTS, account)) === null) {
+    } else if ((await getManifestSafe(env.MANIFESTS, account)) === null) {
       return new Response("no stored manifest for account", { status: 404 });
     }
 

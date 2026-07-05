@@ -1,4 +1,3 @@
-import { resolveDesiredEntries } from "../../../templates/resolve.js"; // 凍結 v2 経路(P-e で削除)
 import { Catalog } from "../canonical/catalog.js";
 import { ManagedStructuredFile } from "../canonical/catalogEntry.js";
 import { Profiles } from "../canonical/profiles.js";
@@ -80,20 +79,9 @@ export interface ResolveAutoArgs {
 }
 
 /**
- * 新旧 resolver の自動切替(spec v3 §9 P-a)。切替スイッチは catalog.json の有無:
- * canonical-files 側の merge / revert だけで v3 移行とロールバックが完結する。
+ * 望ましい状態の導出(spec v3)。呼び出し互換のため引数名は vars(v3 では contents として渡す)。
  */
 export async function resolveDesired(args: ResolveAutoArgs): Promise<DesiredFileData[]> {
-  const catalogRaw = await args.source.readFile("catalog.json");
-  if (catalogRaw === null) {
-    return resolveDesiredEntries({
-      source: args.source,
-      languages: args.languages,
-      bundles: args.bundles,
-      vars: args.vars,
-      exclude: args.exclude,
-    });
-  }
   return deriveDesiredFiles({
     source: args.source,
     languages: args.languages,

@@ -48,7 +48,7 @@ export function parseManifest(input: unknown): Manifest {
     if (entry.vars !== undefined) {
       throw new Error(`manifest: ${name}: 'vars' is removed; use 'contents' (spec v3 §8)`);
     }
-    let vars: Record<string, string> = {};
+    let contents: Record<string, string> = {};
     if (entry.contents !== undefined) {
       const c = entry.contents;
       if (typeof c !== "object" || c === null || Array.isArray(c)) {
@@ -58,10 +58,10 @@ export function parseManifest(input: unknown): Manifest {
         if (typeof v !== "string")
           throw new Error(`manifest: ${name}.contents.${k} must be a string`);
       }
-      vars = c as Record<string, string>;
+      contents = c as Record<string, string>;
     }
 
-    repositories[name] = { languages: entry.languages as string[], bundles, vars, exclude };
+    repositories[name] = { languages: entry.languages as string[], bundles, contents, exclude };
   }
   return { account: o.account, revision: o.revision, sourceCommit: o.sourceCommit, repositories };
 }

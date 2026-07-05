@@ -28,14 +28,14 @@ test("parseManifest rejects missing account/revision", () => {
   expect(() => parseManifest({ ...valid, revision: undefined })).toThrow();
 });
 
-test("parseManifest defaults vars/exclude", () => {
+test("parseManifest defaults contents/exclude", () => {
   const m = parseManifest({
     account: "kukv",
     revision: 1,
     sourceCommit: "x",
     repositories: { dotfiles: { languages: [] } },
   });
-  expect(m.repositories.dotfiles!.vars).toEqual({});
+  expect(m.repositories.dotfiles!.contents).toEqual({});
   expect(m.repositories.dotfiles!.exclude).toEqual([]);
 });
 
@@ -111,14 +111,14 @@ test("parseManifest accepts bundles and rejects non-string entries", () => {
   ).toThrow(/bundles/i);
 });
 
-test("contents は vars の後継として受理(RepoEntry.vars に入る)", () => {
+test("contents を受理して RepoEntry.contents に入れる", () => {
   const m = parseManifest({
     account: "o",
     revision: 1,
     sourceCommit: "c",
     repositories: { r: { languages: ["typescript"], contents: { codeowner: "@org/team" } } },
   });
-  expect(m.repositories.r?.vars).toEqual({ codeowner: "@org/team" });
+  expect(m.repositories.r?.contents).toEqual({ codeowner: "@org/team" });
 });
 
 test("parseManifest は廃止された vars キーを fail loud で拒否する", () => {

@@ -10,7 +10,7 @@ function manifest(over: Record<string, unknown> = {}) {
     account: "bright-room",
     revision: 1,
     sourceCommit: "c",
-    repositories: { r1: { languages: [], bundles: [], vars: {}, exclude: [] } },
+    repositories: { r1: { languages: [], bundles: [], contents: {}, exclude: [] } },
     ...over,
   };
 }

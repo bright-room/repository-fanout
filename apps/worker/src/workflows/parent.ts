@@ -56,7 +56,7 @@ export async function runParent(
     entry: {
       languages: string[];
       bundles: string[];
-      vars: Record<string, string>;
+      contents: Record<string, string>;
       exclude: string[];
     };
   }
@@ -104,7 +104,7 @@ export async function runParent(
               repo: `${it.account}/${it.name}`,
               languages: it.entry.languages,
               bundles: it.entry.bundles,
-              vars: it.entry.vars,
+              vars: it.entry.contents,
               exclude: it.entry.exclude,
             },
           });

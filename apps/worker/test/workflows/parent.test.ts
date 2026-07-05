@@ -17,7 +17,7 @@ function manifest(account: string, repoNames: string[], revision = 1) {
     revision,
     sourceCommit: "c0ffee",
     repositories: Object.fromEntries(
-      repoNames.map((n) => [n, { languages: ["typescript"], bundles: [], vars: {}, exclude: [] }]),
+      repoNames.map((n) => [n, { languages: ["typescript"], bundles: [], contents: {}, exclude: [] }]),
     ),
   };
 }

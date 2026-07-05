@@ -1,15 +1,14 @@
-# packages/core の構造化提案 — system-sekkei/library 流の業務概念パッケージ化(rev.2)
+# packages/core の構造設計 — 業務概念パッケージ + ドメインオブジェクト(rev.2)
 
-> 参考: https://github.com/system-sekkei/library(増田亨『現場で役立つシステム設計の原則』サンプル)
 > 対象: repository-fanout の packages/core(+ worker/cli の位置づけ整理)
 > status: 承認済み(2026-07-05)。P-a プラン(2026-07-05-v3-p1-core-engine.md)に反映済み
 > rev.2: クラス中心のドメインオブジェクト化を採用(ユーザー決定)。境界ルール(§4)を新設
 
 ---
 
-## 1. library から借りる原則
+## 1. 設計原則
 
-| library の原則 | fanout への適用 |
+| 原則 | fanout への適用 |
 |---|---|
 | パッケージは技術レイヤでなく**業務概念**で切る | ○ spec の語彙(canonical / desired / reconcile / retraction / branch / manifest)でパッケージを切る |
 | **ドメインオブジェクト中心**: データと操作を一緒に持ち、完全コンストラクタで不変条件を保証 | ○ 採用(rev.2)。parseCatalog のような「検証と裸データの分離」をやめ、検証済みであることを型(クラス)で保証する。ただし §4 の境界ルールに従う |
@@ -74,7 +73,7 @@ packages/core/src/
 KV も同様。つまり **step / KV / HTTP 境界を越えた瞬間、クラスインスタンスはメソッドを失う**。
 ここを無視してクラスを配ると「メソッドが生えているはずの値が実は裸 JSON」という実行時事故になる。
 
-そこで library の transfer(DTO)相当のルールを 1 本だけ敷く:
+そこで境界横断用の運搬データ(DTO)ルールを 1 本だけ敷く:
 
 > **境界を越える値は plain スキーマ(TS 型)で運び、境界の内側に入った所で
 > ドメインオブジェクトに載せ替える(`X.from(data)`)。ドメインオブジェクトは境界を越えない。**
@@ -154,11 +153,11 @@ export class StructuredDocument {
 
 ## 6. apps の位置づけと scenario
 
-| library | fanout |
+| レイヤ | fanout での担い手 |
 |---|---|
-| presentation/api | apps/worker の index.ts + workflows/、apps/cli のコマンド |
-| infrastructure/datasource | worker の templateSource / kv、cli の localSource(port 実装) |
-| application/scenario | core の `application/scenario/reconcileRepository.ts` |
+| presentation | apps/worker の index.ts + workflows/、apps/cli のコマンド |
+| infrastructure(アダプタ) | worker の templateSource / kv、cli の localSource(port 実装) |
+| application(進行役) | core の `application/scenario/reconcileRepository.ts` |
 
 **Workers 制約への対応**: scenario は「ステップごとの純関数の束」(desired 導出 / 読むべきパス算出 /
 差分計算 / retraction 計画)として提供する。worker は各関数を `step.do` で包み(再開粒度を維持)、

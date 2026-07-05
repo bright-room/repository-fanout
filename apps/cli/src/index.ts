@@ -1,25 +1,21 @@
 #!/usr/bin/env -S npx tsx
 import { GitHubClient, RepoIO } from "@repository-fanout/core";
 import { applyRepo } from "./applyRepo.js";
+import { parseCliArgs } from "./args.js";
 import { actualReader, templateSource } from "./github.js";
 import { planRepo } from "./planRepo.js";
 
-function arg(name: string): string | undefined {
-  const i = process.argv.indexOf(`--${name}`);
-  return i >= 0 ? process.argv[i + 1] : undefined;
-}
-
 async function main() {
   const cmd = process.argv[2];
+  const args = parseCliArgs(process.argv);
   if (cmd === "validate") {
-    const dir = arg("dir");
-    if (!dir) {
+    if (!args.dir) {
       console.error("usage: fanout validate --dir <canonical-files checkout path>");
       process.exit(2);
     }
     const { localSource } = await import("./localSource.js");
     const { validateSource } = await import("./validateDir.js");
-    const errors = await validateSource(localSource(dir));
+    const errors = await validateSource(localSource(args.dir));
     if (errors.length > 0) {
       console.error(`validation failed (${errors.length} error(s)):`);
       for (const e of errors) console.error(`  ✗ ${e}`);
@@ -29,19 +25,15 @@ async function main() {
     return;
   }
 
-  const repo = arg("repo");
-  const templatesRepo = arg("templates") ?? "bright-room/canonical-files";
-  const languages = (arg("languages") ?? "").split(",").filter(Boolean);
-  const bundles = (arg("bundles") ?? "").split(",").filter(Boolean);
-  const exclude = (arg("exclude") ?? "").split(",").filter(Boolean);
-  const codeowner = arg("codeowner") ?? repo?.split("/")[0] ?? "";
   const token = process.env.GITHUB_TOKEN;
-  if ((cmd !== "dry-run" && cmd !== "apply") || !repo || !token) {
+  if ((cmd !== "dry-run" && cmd !== "apply") || !args.repo || !token) {
     console.error(
       "usage: GITHUB_TOKEN=... fanout <dry-run|apply|validate> --repo owner/name [--languages a,b] [--bundles x,y] [--exclude p,q] [--templates owner/repo] [--codeowner x]",
     );
     process.exit(2);
   }
+  const repo = args.repo;
+  const { templatesRepo, languages, bundles, exclude, codeowner } = args;
   const client = new GitHubClient({ token });
   if (cmd === "dry-run") {
     const plan = await planRepo({

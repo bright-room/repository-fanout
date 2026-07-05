@@ -113,6 +113,49 @@ test("base-only(languages/bundles 空)は base 寄与パスだけを配布する
   expect(rn.data.extends).toEqual(["github>o/rc"]);
 });
 
+test("G3: base の PR/ISSUE テンプレが正しい中身で描画され config の {{repo}} が補間される", async () => {
+  const src = memorySourceV3({
+    "catalog.json": JSON.stringify({
+      files: {
+        ".github/pull_request_template.md": { file_type: "markdown", mode: "replaced" },
+        ".github/ISSUE_TEMPLATE/bug_report.yaml": { file_type: "yaml", mode: "replaced" },
+        ".github/ISSUE_TEMPLATE/config.yml": { file_type: "yaml", mode: "replaced" },
+      },
+    }),
+    "templates/pr.liquid": "## Summary\n\n## Checklist\n\n- [ ] Tests pass\n",
+    "templates/bug.liquid":
+      'name: Bug Report\nlabels:\n  - "Type: Bug"\nbody:\n  - type: textarea\n',
+    "templates/config.liquid":
+      "blank_issues_enabled: true\ncontact_links:\n  - name: Discussions\n    url: https://github.com/{{ repo }}/discussions\n",
+    "profiles/base/contributes.json": JSON.stringify({
+      ".github/pull_request_template.md": { template: "pr.liquid" },
+      ".github/ISSUE_TEMPLATE/bug_report.yaml": { template: "bug.liquid" },
+      ".github/ISSUE_TEMPLATE/config.yml": { template: "config.liquid" },
+    }),
+  });
+  const entries = await deriveDesiredFiles({
+    source: src,
+    languages: [],
+    bundles: [],
+    contents: {},
+    exclude: [],
+    repo: "bright-room/example",
+    account: "bright-room",
+  });
+  const byPath = Object.fromEntries(entries.map((e) => [e.path, e]));
+  const pr = byPath[".github/pull_request_template.md"];
+  if (pr?.strategy !== "replace") throw new Error("PR テンプレが replace でない");
+  expect(pr.content).toContain("## Checklist");
+  const bug = byPath[".github/ISSUE_TEMPLATE/bug_report.yaml"];
+  if (bug?.strategy !== "replace") throw new Error("bug form が replace でない");
+  expect(bug.content).toContain('"Type: Bug"');
+  const cfg = byPath[".github/ISSUE_TEMPLATE/config.yml"];
+  if (cfg?.strategy !== "replace") throw new Error("config が replace でない");
+  // {{ repo }} が実 repo に補間され、未展開の Liquid タグが残らない
+  expect(cfg.content).toContain("https://github.com/bright-room/example/discussions");
+  expect(cfg.content).not.toContain("{{");
+});
+
 test("fail fast: 未知 profile / 未登録パス / template 不在", async () => {
   await expect(
     deriveDesiredFiles({ source: memorySourceV3(FILES), ...baseArgs, languages: ["ruby"] }),

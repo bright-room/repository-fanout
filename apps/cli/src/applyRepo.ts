@@ -3,7 +3,7 @@ import {
   decideBranchAction,
   type PrState,
   type RepoIO,
-  resolveDesiredEntries,
+  resolveDesiredStep,
   type TemplateSource,
 } from "@repository-fanout/core";
 
@@ -39,8 +39,7 @@ export interface ApplyArgs {
  * 制限: KV に触れないため配布記録の更新・削除追従は行わない(worker の reconcile のみ)。
  */
 export async function applyRepo(args: ApplyArgs): Promise<{ changed: number; prNumber?: number }> {
-  const desired = await resolveDesiredEntries({
-    source: args.source,
+  const desired = await resolveDesiredStep(args.source, {
     languages: args.languages,
     bundles: args.bundles,
     vars: args.vars,

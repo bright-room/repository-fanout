@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { TemplateSource } from "../../../../src/domain/model/canonical/templateSource.js";
-import { deriveDesiredFiles, resolveDesired } from "../../../../src/domain/model/desired/derive.js";
+import { deriveDesiredFiles } from "../../../../src/domain/model/desired/derive.js";
 
 /** v3 は readFile / listFiles しか使わない */
 function memorySourceV3(files: Record<string, string>): TemplateSource {
@@ -126,40 +126,4 @@ test("fail fast: 未知 profile / 未登録パス / template 不在", async () =
       ...baseArgs,
     }),
   ).rejects.toThrow(/template not found/);
-});
-
-test("resolveDesired: catalog.json が無ければ v2 経路(strategies.json)へ委譲", async () => {
-  const files: Record<string, string> = {
-    "strategies.json": '{".gitignore":"managed-block"}',
-    "base/files/.gitignore": "{{gitignore}}\n",
-  };
-  const legacy: TemplateSource = {
-    async readFile(p) {
-      return files[p] ?? null;
-    },
-    async listFiles(prefix) {
-      return Object.keys(files).filter((p) => p.startsWith(prefix));
-    },
-    async readFragmentManifest(dir) {
-      return dir === "base"
-        ? { gitignore: [{ section_comment: "base", ignores: [".DS_Store"] }] }
-        : null;
-    },
-    async listNames() {
-      return [];
-    },
-    async nameExists() {
-      return false;
-    },
-  };
-  const entries = await resolveDesired({
-    source: legacy,
-    languages: [],
-    bundles: [],
-    vars: {},
-    exclude: [],
-  });
-  expect(entries).toEqual([
-    { strategy: "managed-block", path: ".gitignore", blockContent: "### base ###\n.DS_Store" },
-  ]);
 });

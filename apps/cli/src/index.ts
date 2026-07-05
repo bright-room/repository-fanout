@@ -33,11 +33,12 @@ async function main() {
   const templatesRepo = arg("templates") ?? "bright-room/canonical-files";
   const languages = (arg("languages") ?? "").split(",").filter(Boolean);
   const bundles = (arg("bundles") ?? "").split(",").filter(Boolean);
+  const exclude = (arg("exclude") ?? "").split(",").filter(Boolean);
   const codeowner = arg("codeowner") ?? repo?.split("/")[0] ?? "";
   const token = process.env.GITHUB_TOKEN;
   if ((cmd !== "dry-run" && cmd !== "apply") || !repo || !token) {
     console.error(
-      "usage: GITHUB_TOKEN=... fanout <dry-run|apply|validate> --repo owner/name [--languages a,b] [--bundles x,y] [--templates owner/repo] [--codeowner x]",
+      "usage: GITHUB_TOKEN=... fanout <dry-run|apply|validate> --repo owner/name [--languages a,b] [--bundles x,y] [--exclude p,q] [--templates owner/repo] [--codeowner x]",
     );
     process.exit(2);
   }
@@ -48,7 +49,7 @@ async function main() {
       languages,
       bundles,
       vars: { codeowner },
-      exclude: [],
+      exclude,
       readActual: actualReader(client, repo),
     });
     if (plan.changes.length === 0) {
@@ -66,7 +67,7 @@ async function main() {
     languages,
     bundles,
     vars: { codeowner },
-    exclude: [],
+    exclude,
   });
   if (result.changed === 0) console.log(`${repo}: no changes (in sync)`);
   else console.log(`${repo}: ${result.changed} file(s) committed, PR #${result.prNumber}`);

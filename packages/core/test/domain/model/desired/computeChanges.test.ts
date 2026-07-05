@@ -1,9 +1,11 @@
 import { expect, test } from "vitest";
 import { computeChanges } from "../../../../src/domain/model/desired/computeChanges.js";
 import { DesiredFile } from "../../../../src/domain/model/desired/desiredFile.js";
-import type { DesiredFileData } from "../../../../src/domain/model/desired/desiredFileData.js";
+import type {
+  DesiredEntry,
+  DesiredFileData,
+} from "../../../../src/domain/model/desired/desiredFileData.js";
 import { BLOCK_END, BLOCK_START } from "../../../../src/domain/model/reconcile/managedBlock.js";
-import type { DesiredEntry } from "../../../../src/domain/model/desired/desiredFileData.js";
 
 const entries: DesiredEntry[] = [
   { strategy: "replace", path: ".github/release.yml", content: "changelog: {}\n" },

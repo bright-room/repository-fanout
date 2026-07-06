@@ -86,3 +86,4 @@ export {
 } from "./infrastructure/github/errors.js";
 export type { PrInfo, RepoIOOpts } from "./infrastructure/github/repoIO.js";
 export { RepoIO } from "./infrastructure/github/repoIO.js";
+export { ResourceNotFoundException } from "./domain/exception/resourceNotFoundException.js";

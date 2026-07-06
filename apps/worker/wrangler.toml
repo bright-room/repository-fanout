@@ -3,6 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 
+# 1 実行(fetch / Workflow の各 step)あたりの最大 CPU 時間(ms)。
+# 無限ループ等の暴走事故で CPU を延々消費するのを強制停止する保険。
+# 実測ピークは ~240ms、正常系は ~15ms。5000ms = 約20倍の余裕 / デフォルト 30,000ms の 1/6。
+# 処理の大半は I/O 待ち(CPU 非加算)のため、正常実行を巻き込む誤停止はしない。
+# fetch ハンドラと両 Workflow(fanout-parent / fanout-child)を一括でカバー。
+# 注意: これは「1 実行あたり」の上限で、月間合計や合計金額の上限ではない。
+[limits]
+cpu_ms = 5000
+
 [vars]
 TEMPLATES_REPO = "bright-room/canonical-files"
 # OIDC トークンの aud(= fanout の URL。spec v2 §6.2 / D12: workers.dev で恒久化)

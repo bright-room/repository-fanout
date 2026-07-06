@@ -1,10 +1,5 @@
-export interface RepoResult {
-  account: string;
-  repo: string;
-  status: "success" | "noop" | "failed";
-  prNumber?: number;
-  error?: string;
-}
+import type { RepoResult } from "@repository-fanout/core";
+export type { RepoResult };
 
 const k = (runId: string, account: string, repo: string) => `run:${runId}:${account}:${repo}`;
 

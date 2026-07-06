@@ -5,6 +5,9 @@
 *.iws
 *.iml
 *.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
 
 ### VSCode ###
 .vscode/
@@ -21,6 +24,8 @@ Thumbs.db
 ### AI agents ###
 .claude/settings.local.json
 .claude/worktrees/
+.claude/scheduled_tasks.lock
+.superpowers/
 CLAUDE.local.md
 
 ### Logfiles ###
@@ -41,6 +46,9 @@ dist/
 coverage/
 *.tsbuildinfo
 *.log
+
+### storybook ###
+storybook-static/
 # <<< repository-fanout managed <<<
 
 # repo-own(fanout 管理外): wrangler のローカル状態

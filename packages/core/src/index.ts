@@ -84,8 +84,14 @@ export {
   parseRateLimitRemaining,
   parseRetryAfter,
 } from "./infrastructure/github/errors.js";
-export type { PrInfo, RepoIOOpts } from "./infrastructure/github/repoIO.js";
+export type { RepoIOOpts } from "./infrastructure/github/repoIO.js";
 export { RepoIO } from "./infrastructure/github/repoIO.js";
+export type { PrInfo, TargetRepository } from "./application/service/target/targetRepository.js";
+export type {
+  CommitChangesArgs,
+  CreatePrArgs,
+  TargetPullRequestRepository,
+} from "./application/service/target/targetPullRequestRepository.js";
 export { ResourceNotFoundException } from "./domain/exception/resourceNotFoundException.js";
 export type { StepRunner } from "./application/stepRunner.js";
 export type { RepoResult } from "./domain/model/run/repoResult.js";

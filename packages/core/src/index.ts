@@ -90,3 +90,4 @@ export { ResourceNotFoundException } from "./domain/exception/resourceNotFoundEx
 export type { StepRunner } from "./application/stepRunner.js";
 export type { RepoResult } from "./domain/model/run/repoResult.js";
 export type { ManifestRepository } from "./application/service/manifest/manifestRepository.js";
+export type { DistRecordRepository } from "./application/service/distribution/distRecordRepository.js";

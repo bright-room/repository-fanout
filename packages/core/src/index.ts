@@ -5,6 +5,23 @@ export {
   planRetractionStep,
   resolveDesiredStep,
 } from "./application/scenario/reconcileRepository.js";
+export type { DistRecordRepository } from "./application/service/distribution/distRecordRepository.js";
+export type { InstallationRepository } from "./application/service/installation/installationRepository.js";
+export type { ManifestRepository } from "./application/service/manifest/manifestRepository.js";
+export type {
+  FailureInfo,
+  KeptFilesInfo,
+  Notification,
+} from "./application/service/notification/notification.js";
+export type { RunRepository } from "./application/service/run/runRepository.js";
+export type {
+  CommitChangesArgs,
+  CreatePrArgs,
+  TargetPullRequestRepository,
+} from "./application/service/target/targetPullRequestRepository.js";
+export type { PrInfo, TargetRepository } from "./application/service/target/targetRepository.js";
+export type { StepRunner } from "./application/stepRunner.js";
+export { ResourceNotFoundException } from "./domain/exception/resourceNotFoundException.js";
 export type {
   BranchAction,
   BranchInput,
@@ -30,6 +47,7 @@ export type { DeriveDesiredArgs, ResolveAutoArgs } from "./domain/model/desired/
 export { deriveDesiredFiles, resolveDesired } from "./domain/model/desired/derive.js";
 export { DesiredFile } from "./domain/model/desired/desiredFile.js";
 export type { DesiredEntry, DesiredFileData } from "./domain/model/desired/desiredFileData.js";
+export type { Installation } from "./domain/model/installation/installation.js";
 export { isNewerRevision, parseManifest } from "./domain/model/manifest/parse.js";
 export type { Manifest, RepoEntry } from "./domain/model/manifest/types.js";
 export {
@@ -66,11 +84,11 @@ export type {
   RetractionPlan,
 } from "./domain/model/retraction/retractionPlan.js";
 export { planRetraction } from "./domain/model/retraction/retractionPlan.js";
+export type { RepoResult } from "./domain/model/run/repoResult.js";
 export { decodeBase64Utf8 } from "./domain/type/base64.js";
 export { sha256Hex } from "./domain/type/hash.js";
 export { deepEqual, isPlainObject } from "./domain/type/object.js";
 export { parseYaml } from "./domain/type/yaml.js";
-export type { Installation } from "./domain/model/installation/installation.js";
 export {
   createInstallationToken,
   listInstallations,
@@ -86,21 +104,3 @@ export {
 } from "./infrastructure/github/errors.js";
 export type { RepoIOOpts } from "./infrastructure/github/repoIO.js";
 export { RepoIO } from "./infrastructure/github/repoIO.js";
-export type { PrInfo, TargetRepository } from "./application/service/target/targetRepository.js";
-export type {
-  CommitChangesArgs,
-  CreatePrArgs,
-  TargetPullRequestRepository,
-} from "./application/service/target/targetPullRequestRepository.js";
-export { ResourceNotFoundException } from "./domain/exception/resourceNotFoundException.js";
-export type { StepRunner } from "./application/stepRunner.js";
-export type { RepoResult } from "./domain/model/run/repoResult.js";
-export type { ManifestRepository } from "./application/service/manifest/manifestRepository.js";
-export type { DistRecordRepository } from "./application/service/distribution/distRecordRepository.js";
-export type { RunRepository } from "./application/service/run/runRepository.js";
-export type { InstallationRepository } from "./application/service/installation/installationRepository.js";
-export type {
-  FailureInfo,
-  KeptFilesInfo,
-  Notification,
-} from "./application/service/notification/notification.js";

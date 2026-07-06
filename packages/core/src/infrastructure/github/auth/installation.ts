@@ -1,5 +1,5 @@
-import { GitHubClient } from "../client.js";
 import type { Installation } from "../../../domain/model/installation/installation.js";
+import { GitHubClient } from "../client.js";
 
 interface ListArgs {
   appJwt: string;

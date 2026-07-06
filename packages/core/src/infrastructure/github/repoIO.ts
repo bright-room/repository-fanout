@@ -1,8 +1,8 @@
+import type { PrInfo } from "../../application/service/target/targetRepository.js";
 import type { FileChange } from "../../domain/model/reconcile/fileChange.js";
 import { decodeBase64Utf8 } from "../../domain/type/base64.js";
 import type { GitHubClient } from "./client.js";
 import { GitHubError } from "./errors.js";
-import type { PrInfo } from "../../application/service/target/targetRepository.js";
 
 export interface RepoIOOpts {
   client: GitHubClient;

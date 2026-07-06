@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
+import type { TargetPullRequestRepository } from "../../../../src/application/service/target/targetPullRequestRepository.js";
 import type {
   PrInfo,
   TargetRepository,
 } from "../../../../src/application/service/target/targetRepository.js";
-import type { TargetPullRequestRepository } from "../../../../src/application/service/target/targetPullRequestRepository.js";
 
 const pr: PrInfo = { number: 1, state: "open", merged: false };
 const reader: TargetRepository = {

@@ -92,3 +92,4 @@ export type { RepoResult } from "./domain/model/run/repoResult.js";
 export type { ManifestRepository } from "./application/service/manifest/manifestRepository.js";
 export type { DistRecordRepository } from "./application/service/distribution/distRecordRepository.js";
 export type { RunRepository } from "./application/service/run/runRepository.js";
+export type { InstallationRepository } from "./application/service/installation/installationRepository.js";

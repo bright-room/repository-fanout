@@ -1,16 +1,5 @@
-export interface FailureInfo {
-  runId: string;
-  account: string;
-  repo: string;
-  error: string;
-}
-
-export interface KeptFilesInfo {
-  runId: string;
-  account: string;
-  repo: string;
-  kept: Array<{ path: string; reason: string }>;
-}
+import type { FailureInfo, KeptFilesInfo } from "@repository-fanout/core";
+export type { FailureInfo, KeptFilesInfo };
 
 /**
  * リポ単位の失敗を Discord Webhook にプレーンテキストで通知する（spec 2026-07-03 §4）。

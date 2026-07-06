@@ -89,3 +89,4 @@ export { RepoIO } from "./infrastructure/github/repoIO.js";
 export { ResourceNotFoundException } from "./domain/exception/resourceNotFoundException.js";
 export type { StepRunner } from "./application/stepRunner.js";
 export type { RepoResult } from "./domain/model/run/repoResult.js";
+export type { ManifestRepository } from "./application/service/manifest/manifestRepository.js";

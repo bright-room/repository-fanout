@@ -1,10 +1,5 @@
 import { GitHubClient } from "../client.js";
-
-export interface Installation {
-  id: number;
-  account: string;
-  accountType: "Organization" | "User";
-}
+import type { Installation } from "../../../domain/model/installation/installation.js";
 
 interface ListArgs {
   appJwt: string;

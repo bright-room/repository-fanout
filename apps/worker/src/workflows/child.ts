@@ -3,7 +3,6 @@ import {
   computeChanges,
   createAppJwt,
   createInstallationToken,
-  DistRecord,
   type Distributed,
   decideBranchAction,
   type FileChange,
@@ -21,7 +20,7 @@ import {
 import { reportRepoFailure } from "../failure.js";
 import { GitHubTemplateSource } from "../github/templateSource.js";
 import type { Env } from "../index.js";
-import { getDistRecord, putDistRecord } from "../kv/distStore.js";
+import { getDistRecord, putDistRecord, toDistRecord, toStored } from "../kv/distStore.js";
 import { recordRepoResult } from "../kv/runStore.js";
 import { notifyKeptFiles } from "../notify.js";
 import { withRetry } from "../retry.js";
@@ -135,7 +134,7 @@ export async function runChild(
 
     const base = await step.do("default branch", () => retry(() => io.getDefaultBranch()));
     const desiredPaths = desired.map((d) => d.path);
-    const readPaths = pathsToRead(desired, record);
+    const readPaths = pathsToRead(desired, Object.keys(record.files));
     const actual = await step.do("read actual", () =>
       retry(() => io.readActualFiles(readPaths, base.branch)),
     );
@@ -156,12 +155,12 @@ export async function runChild(
     }
 
     const retraction = await step.do("plan retraction", async () => {
-      const plan = await DistRecord.from(record).planRetraction({
+      const plan = await toDistRecord(record).planRetraction({
         desiredPaths,
         excluded: p.exclude,
         actual,
       });
-      return { deletions: plan.deletions, record: plan.record.toData(), kept: plan.kept };
+      return { deletions: plan.deletions, record: toStored(plan.record), kept: plan.kept };
     });
 
     // 残置ファイルは「管理の引き渡し」イベントであり PR の有無(noop/write)と独立に
@@ -194,7 +193,7 @@ export async function runChild(
         });
       }
     }
-    const nextRecord = DistRecord.from(retraction.record).recordDistribution(distributed).toData();
+    const nextRecord = toStored(toDistRecord(retraction.record).recordDistribution(distributed));
     // managed-block/extends-field のみのリポは記録が常に空のままになりやすく、
     // 無変化でも毎回 put すると Free プランの KV write 予算を浪費する。
     const recordChanged = JSON.stringify(nextRecord) !== JSON.stringify(record);

@@ -1,14 +1,8 @@
 import { env } from "cloudflare:test";
-import {
-  BLOCK_END,
-  BLOCK_START,
-  type DistRecordData,
-  sha256Hex,
-  type TemplateSource,
-} from "@repository-fanout/core";
+import { BLOCK_END, BLOCK_START, sha256Hex, type TemplateSource } from "@repository-fanout/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/index.js";
-import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
+import { getDistRecord, putDistRecord, type StoredDistRecord } from "../../src/kv/distStore.js";
 import {
   type ChildParams,
   type RepoPort,
@@ -119,7 +113,7 @@ describe("runChild wiring", () => {
   });
 
   it("canonical file removed + hash matches → deletion in PR, record kept (spec §5.4)", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };
@@ -135,7 +129,7 @@ describe("runChild wiring", () => {
   });
 
   it("modified file → kept, dropped from record, noted in PR body", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };
@@ -158,7 +152,7 @@ describe("runChild wiring", () => {
   });
 
   it("no diff → noop, but record cleanup still persisted", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "gone.yml": { strategy: "replace", hashes: ["h"] } }, // 実ファイル無し → 掃除
     };
@@ -216,7 +210,7 @@ describe("runChild wiring", () => {
   });
 
   it("kept files trigger a Discord notification (spec §5.7)", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };

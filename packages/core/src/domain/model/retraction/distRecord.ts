@@ -86,4 +86,16 @@ export class DistRecord {
     }
     return { version: 1, files };
   }
+
+  /** 配布(またはハッシュ一致採用)を追記した新レコードを返す(非破壊)。 */
+  recordDistribution(distributed: Distributed[]): DistRecord {
+    const files = new Map(this.files);
+    for (const d of distributed) {
+      const prev = files.get(d.path);
+      const hashes = prev ? [...prev.hashes] : [];
+      if (!hashes.some((h) => h.sameValue(d.hash))) hashes.push(d.hash);
+      files.set(d.path, { strategy: d.strategy, hashes });
+    }
+    return new DistRecord(files);
+  }
 }

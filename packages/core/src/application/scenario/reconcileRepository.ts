@@ -2,7 +2,6 @@ import type { TemplateSource } from "../../domain/model/canonical/templateSource
 import { computeChanges } from "../../domain/model/desired/computeChanges.js";
 import { resolveDesired } from "../../domain/model/desired/derive.js";
 import type { DesiredFileData } from "../../domain/model/desired/desiredFileData.js";
-import type { DistRecordData } from "../../domain/model/retraction/distRecord.js";
 
 /**
  * 1 リポの reconcile の進行役(spec v2 §5.4 / core 構造設計 §6)。
@@ -28,9 +27,9 @@ export function resolveDesiredStep(
 }
 
 /** step 2: 実ファイルを読むべきパス = 望ましい状態 ∪ 配布記録だけにあるパス(削除候補) */
-export function pathsToRead(desired: DesiredFileData[], record: DistRecordData): string[] {
+export function pathsToRead(desired: DesiredFileData[], recordedPaths: string[]): string[] {
   const desiredPaths = desired.map((d) => d.path);
-  const recordOnly = Object.keys(record.files).filter((p) => !desiredPaths.includes(p));
+  const recordOnly = recordedPaths.filter((p) => !desiredPaths.includes(p));
   return [...desiredPaths, ...recordOnly];
 }
 

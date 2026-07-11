@@ -196,6 +196,7 @@ export async function runChild(
     const nextRecord = toStored(toDistRecord(retraction.record).recordDistribution(distributed));
     // managed-block/extends-field のみのリポは記録が常に空のままになりやすく、
     // 無変化でも毎回 put すると Free プランの KV write 予算を浪費する。
+    // record は KV 生形・nextRecord は toStored の正準形。書き手が本システムのみのため両辺は一致する。
     const recordChanged = JSON.stringify(nextRecord) !== JSON.stringify(record);
 
     const hasDiff = changes.length > 0 || retraction.deletions.length > 0;

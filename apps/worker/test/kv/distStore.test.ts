@@ -26,6 +26,6 @@ describe("distStore", () => {
       version: 1 as const,
       files: { "b.txt": { strategy: "create-only" as const, hashes: ["h9"] } },
     };
-    expect(toStored(toDistRecord(stored))).toEqual(stored);
+    expect(JSON.stringify(toStored(toDistRecord(stored)))).toBe(JSON.stringify(stored));
   });
 });

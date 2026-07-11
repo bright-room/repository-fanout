@@ -119,6 +119,7 @@ describe("runChild wiring", () => {
     };
     await putDistRecord(env.MANIFESTS, "bright-room", "bright-room/target", rec);
     const state: FakeRepoState = { files: { "old.yml": "OLD" }, commits: [], prs: [], bodies: {} };
+    const putSpy = vi.spyOn(env.MANIFESTS, "put");
     await runChild(env, params, fakeStep, {
       templates: memTemplates({}), // 正本から消えた
       io: fakeRepo(state),
@@ -126,6 +127,8 @@ describe("runChild wiring", () => {
     expect(state.commits[0]!.deletions).toEqual(["old.yml"]);
     const after = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
     expect(after.files["old.yml"]).toBeDefined(); // merge 確認まで維持
+    expect(putSpy).not.toHaveBeenCalled(); // 記録は無変化 → KV write 節約(recordChanged=false)
+    putSpy.mockRestore();
   });
 
   it("modified file → kept, dropped from record, noted in PR body", async () => {

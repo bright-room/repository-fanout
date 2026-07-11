@@ -98,4 +98,40 @@ export class DistRecord {
     }
     return new DistRecord(files);
   }
+
+  /**
+   * 削除判定(spec v2 §5.4/§5.5)。不変条件: 記録ハッシュのいずれかと完全一致するものしか
+   * deletions に入れない。全曖昧ケースは「残す」に倒す。
+   */
+  async planRetraction(args: RetractionArgs): Promise<RetractionPlan> {
+    const desired = new Set(args.desiredPaths);
+    const excluded = new Set(args.excluded);
+    const deletions: string[] = [];
+    const kept: KeptFile[] = [];
+    const files = new Map(this.files);
+
+    for (const [path, rec] of this.files) {
+      if (desired.has(path)) continue;
+      if (excluded.has(path)) {
+        files.delete(path);
+        kept.push({ path, reason: "excluded" });
+        continue;
+      }
+      const current = args.actual[path];
+      if (current === undefined) {
+        files.delete(path);
+        continue;
+      }
+      const hash = await Sha256.of(current);
+      if (rec.hashes.some((h) => h.sameValue(hash))) {
+        deletions.push(path);
+      } else {
+        files.delete(path);
+        kept.push({ path, reason: "modified" });
+      }
+    }
+    deletions.sort();
+    kept.sort((a, b) => a.path.localeCompare(b.path));
+    return { deletions, record: new DistRecord(files), kept };
+  }
 }

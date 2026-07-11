@@ -63,3 +63,77 @@ describe("DistRecord.recordDistribution", () => {
     expect(rec.toData().files).toEqual({});
   });
 });
+
+const recordOf = async (path: string, content: string): Promise<DistRecord> =>
+  DistRecord.from({
+    version: 1,
+    files: { [path]: { strategy: "replace", hashes: [(await Sha256.of(content)).value] } },
+  });
+
+describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
+  it("ハッシュ一致 → 削除提案・記録は merge 確認まで維持", async () => {
+    const r = await (await recordOf("old.yml", "OLD")).planRetraction({
+      desiredPaths: [],
+      excluded: [],
+      actual: { "old.yml": "OLD" },
+    });
+    expect(r.deletions).toEqual(["old.yml"]);
+    expect(r.record.toData().files["old.yml"]).toBeDefined();
+    expect(r.kept).toEqual([]);
+  });
+  it("履歴のいずれかと一致(時間差 merge)", async () => {
+    const rec = DistRecord.from({
+      version: 1,
+      files: {
+        "old.yml": {
+          strategy: "replace",
+          hashes: [(await Sha256.of("V1")).value, (await Sha256.of("V2")).value],
+        },
+      },
+    });
+    const r = await rec.planRetraction({
+      desiredPaths: [],
+      excluded: [],
+      actual: { "old.yml": "V1" },
+    });
+    expect(r.deletions).toEqual(["old.yml"]);
+  });
+  it("実ファイル不在 → 記録から掃除", async () => {
+    const r = await (await recordOf("old.yml", "OLD")).planRetraction({
+      desiredPaths: [],
+      excluded: [],
+      actual: {},
+    });
+    expect(r.deletions).toEqual([]);
+    expect(r.record.toData().files["old.yml"]).toBeUndefined();
+  });
+  it("改変済み → 消さず記録から外し注記(残しすぎに倒す)", async () => {
+    const r = await (await recordOf("old.yml", "OLD")).planRetraction({
+      desiredPaths: [],
+      excluded: [],
+      actual: { "old.yml": "REPO-EDITED" },
+    });
+    expect(r.deletions).toEqual([]);
+    expect(r.record.toData().files["old.yml"]).toBeUndefined();
+    expect(r.kept).toEqual([{ path: "old.yml", reason: "modified" }]);
+  });
+  it("まだ望ましいパスは候補にならない", async () => {
+    const r = await (await recordOf("keep.yml", "X")).planRetraction({
+      desiredPaths: ["keep.yml"],
+      excluded: [],
+      actual: { "keep.yml": "X" },
+    });
+    expect(r.deletions).toEqual([]);
+    expect(r.record.toData().files["keep.yml"]).toBeDefined();
+  });
+  it("exclude → 引き渡し: 消さず記録から外し注記(spec §5.5)", async () => {
+    const r = await (await recordOf("release.yml", "X")).planRetraction({
+      desiredPaths: [],
+      excluded: ["release.yml"],
+      actual: { "release.yml": "X" },
+    });
+    expect(r.deletions).toEqual([]);
+    expect(r.record.toData().files["release.yml"]).toBeUndefined();
+    expect(r.kept).toEqual([{ path: "release.yml", reason: "excluded" }]);
+  });
+});

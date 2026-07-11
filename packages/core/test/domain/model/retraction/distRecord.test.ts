@@ -28,7 +28,7 @@ describe("DistFileRecord", () => {
 
 describe("DistRecord.recordDistribution", () => {
   it("新しいハッシュを履歴として追記する(spec §5.3)", () => {
-    const rec = DistRecord.of(
+    const rec = new DistRecord(
       new Map([["a.txt", new DistFileRecord("replace", [Sha256.fromHex("h1")])]]),
     );
     const next = rec.recordDistribution([
@@ -37,7 +37,7 @@ describe("DistRecord.recordDistribution", () => {
     expect(hexes(next, "a.txt")).toEqual(["h1", "h2"]);
   });
   it("既に記録済みのハッシュは重複させない", () => {
-    const rec = DistRecord.of(
+    const rec = new DistRecord(
       new Map([["a.txt", new DistFileRecord("replace", [Sha256.fromHex("h1")])]]),
     );
     const next = rec.recordDistribution([
@@ -60,7 +60,7 @@ describe("DistRecord.recordDistribution", () => {
 });
 
 const recordOf = async (path: string, content: string): Promise<DistRecord> =>
-  DistRecord.of(new Map([[path, new DistFileRecord("replace", [await Sha256.of(content)])]]));
+  new DistRecord(new Map([[path, new DistFileRecord("replace", [await Sha256.of(content)])]]));
 
 describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
   it("ハッシュ一致 → 削除提案・記録は merge 確認まで維持", async () => {
@@ -74,7 +74,7 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
     expect(r.kept).toEqual([]);
   });
   it("履歴のいずれかと一致(時間差 merge)", async () => {
-    const rec = DistRecord.of(
+    const rec = new DistRecord(
       new Map([
         ["old.yml", new DistFileRecord("replace", [await Sha256.of("V1"), await Sha256.of("V2")])],
       ]),

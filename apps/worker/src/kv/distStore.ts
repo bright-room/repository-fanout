@@ -39,7 +39,7 @@ export function toDistRecord(stored: StoredDistRecord): DistRecord {
       ),
     );
   }
-  return DistRecord.of(files);
+  return new DistRecord(files);
 }
 
 /** 集約 → 保存形(書込・step 運搬用)。 */

@@ -57,15 +57,14 @@ export class DistFileRecord {
  * 保存形式(KV スキーマ・JSON)は関知しない — 永続化の載せ替えは apps 側 datasource の責務。
  */
 export class DistRecord {
-  private constructor(private readonly fileRecords: Map<string, DistFileRecord>) {}
+  private readonly fileRecords: Map<string, DistFileRecord>;
+
+  constructor(files: ReadonlyMap<string, DistFileRecord>) {
+    this.fileRecords = new Map(files);
+  }
 
   static empty(): DistRecord {
     return new DistRecord(new Map());
-  }
-
-  /** 復元用ファクトリ(datasource が保存形から載せ替える)。 */
-  static of(files: ReadonlyMap<string, DistFileRecord>): DistRecord {
-    return new DistRecord(new Map(files));
   }
 
   /** 永続化マッピング用の読み出しアクセサ。 */

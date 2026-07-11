@@ -2,7 +2,6 @@ export type { ReconcileDeclaration } from "./application/scenario/reconcileRepos
 export {
   computeChangesStep,
   pathsToRead,
-  planRetractionStep,
   resolveDesiredStep,
 } from "./application/scenario/reconcileRepository.js";
 export type {
@@ -50,25 +49,21 @@ export {
   StructuredDocument,
   StructuredParseError,
 } from "./domain/model/reconcile/structuredDocument.js";
-export type {
-  DistFileRecord,
-  DistRecord,
-  Distributed,
-} from "./domain/model/retraction/distRecord.js";
+// retraction（DistRecord 集約に一本化）
 export {
-  emptyDistRecord,
-  parseDistRecord,
-  recordDistribution,
+  type DistFileRecordData,
+  DistRecord,
+  type DistRecordData,
+  type Distributed,
+  type DistStrategy,
+  type KeptFile,
+  type RetractionArgs,
+  type RetractionPlan,
 } from "./domain/model/retraction/distRecord.js";
-export type {
-  KeptFile,
-  RetractionArgs,
-  RetractionPlan,
-} from "./domain/model/retraction/retractionPlan.js";
-export { planRetraction } from "./domain/model/retraction/retractionPlan.js";
 export { decodeBase64Utf8 } from "./domain/type/base64.js";
 export { sha256Hex } from "./domain/type/hash.js";
 export { deepEqual, isPlainObject } from "./domain/type/object.js";
+export { Sha256 } from "./domain/type/sha256.js";
 export { parseYaml } from "./domain/type/yaml.js";
 export type { Installation } from "./infrastructure/github/auth/installation.js";
 export {

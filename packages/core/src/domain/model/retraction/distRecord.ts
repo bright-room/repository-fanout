@@ -82,7 +82,7 @@ export class DistRecord {
   toData(): DistRecordData {
     const files: Record<string, DistFileRecordData> = {};
     for (const [path, rec] of this.files) {
-      files[path] = { strategy: rec.strategy, hashes: rec.hashes.map((h) => h.value) };
+      files[path] = { strategy: rec.strategy, hashes: rec.hashes.map((h) => h.toString()) };
     }
     return { version: 1, files };
   }
@@ -93,7 +93,7 @@ export class DistRecord {
     for (const d of distributed) {
       const prev = files.get(d.path);
       const hashes = prev ? [...prev.hashes] : [];
-      if (!hashes.some((h) => h.sameValue(d.hash))) hashes.push(d.hash);
+      if (!hashes.some((h) => h.equals(d.hash))) hashes.push(d.hash);
       files.set(d.path, { strategy: d.strategy, hashes });
     }
     return new DistRecord(files);
@@ -123,7 +123,7 @@ export class DistRecord {
         continue;
       }
       const hash = await Sha256.of(current);
-      if (rec.hashes.some((h) => h.sameValue(hash))) {
+      if (rec.hashes.some((h) => h.equals(hash))) {
         deletions.push(path);
       } else {
         files.delete(path);

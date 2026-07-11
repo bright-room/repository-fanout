@@ -67,7 +67,7 @@ describe("DistRecord.recordDistribution", () => {
 const recordOf = async (path: string, content: string): Promise<DistRecord> =>
   DistRecord.from({
     version: 1,
-    files: { [path]: { strategy: "replace", hashes: [(await Sha256.of(content)).value] } },
+    files: { [path]: { strategy: "replace", hashes: [(await Sha256.of(content)).toString()] } },
   });
 
 describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
@@ -87,7 +87,7 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
       files: {
         "old.yml": {
           strategy: "replace",
-          hashes: [(await Sha256.of("V1")).value, (await Sha256.of("V2")).value],
+          hashes: [(await Sha256.of("V1")).toString(), (await Sha256.of("V2")).toString()],
         },
       },
     });

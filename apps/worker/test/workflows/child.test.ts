@@ -2,7 +2,7 @@ import { env } from "cloudflare:test";
 import {
   BLOCK_END,
   BLOCK_START,
-  type DistRecord,
+  type DistRecordData,
   sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
@@ -119,7 +119,7 @@ describe("runChild wiring", () => {
   });
 
   it("canonical file removed + hash matches → deletion in PR, record kept (spec §5.4)", async () => {
-    const rec: DistRecord = {
+    const rec: DistRecordData = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };
@@ -135,7 +135,7 @@ describe("runChild wiring", () => {
   });
 
   it("modified file → kept, dropped from record, noted in PR body", async () => {
-    const rec: DistRecord = {
+    const rec: DistRecordData = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };
@@ -158,7 +158,7 @@ describe("runChild wiring", () => {
   });
 
   it("no diff → noop, but record cleanup still persisted", async () => {
-    const rec: DistRecord = {
+    const rec: DistRecordData = {
       version: 1,
       files: { "gone.yml": { strategy: "replace", hashes: ["h"] } }, // 実ファイル無し → 掃除
     };
@@ -216,7 +216,7 @@ describe("runChild wiring", () => {
   });
 
   it("kept files trigger a Discord notification (spec §5.7)", async () => {
-    const rec: DistRecord = {
+    const rec: DistRecordData = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };

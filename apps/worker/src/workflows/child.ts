@@ -3,6 +3,7 @@ import {
   computeChanges,
   createAppJwt,
   createInstallationToken,
+  DistRecord,
   type Distributed,
   decideBranchAction,
   type FileChange,
@@ -11,12 +12,10 @@ import {
   type KeptFile,
   type PrState,
   pathsToRead,
-  planRetraction,
   RepoIO,
-  recordDistribution,
   resolveDesiredStep,
+  Sha256,
   StructuredParseError,
-  sha256Hex,
   type TemplateSource,
 } from "@repository-fanout/core";
 import { reportRepoFailure } from "../failure.js";
@@ -156,9 +155,14 @@ export async function runChild(
       throw err;
     }
 
-    const retraction = await step.do("plan retraction", () =>
-      planRetraction({ record, desiredPaths, excluded: p.exclude, actual }),
-    );
+    const retraction = await step.do("plan retraction", async () => {
+      const plan = await DistRecord.from(record).planRetraction({
+        desiredPaths,
+        excluded: p.exclude,
+        actual,
+      });
+      return { deletions: plan.deletions, record: plan.record.toData(), kept: plan.kept };
+    });
 
     // 残置ファイルは「管理の引き渡し」イベントであり PR の有無(noop/write)と独立に
     // 人間へ通知する(spec §5.7)。kept になったパスは次回 nextRecord から外れる
@@ -181,16 +185,16 @@ export async function runChild(
     const distributed: Distributed[] = [];
     for (const d of desired) {
       if (d.strategy === "replace" && (changedPaths.has(d.path) || actual[d.path] === d.content)) {
-        distributed.push({ path: d.path, strategy: "replace", hash: await sha256Hex(d.content) });
+        distributed.push({ path: d.path, strategy: "replace", hash: await Sha256.of(d.content) });
       } else if (d.strategy === "create-only" && changedPaths.has(d.path)) {
         distributed.push({
           path: d.path,
           strategy: "create-only",
-          hash: await sha256Hex(d.content),
+          hash: await Sha256.of(d.content),
         });
       }
     }
-    const nextRecord = recordDistribution(retraction.record, distributed);
+    const nextRecord = DistRecord.from(retraction.record).recordDistribution(distributed).toData();
     // managed-block/extends-field のみのリポは記録が常に空のままになりやすく、
     // 無変化でも毎回 put すると Free プランの KV write 予算を浪費する。
     const recordChanged = JSON.stringify(nextRecord) !== JSON.stringify(record);

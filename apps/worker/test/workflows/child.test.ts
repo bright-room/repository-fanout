@@ -1,14 +1,8 @@
 import { env } from "cloudflare:test";
-import {
-  BLOCK_END,
-  BLOCK_START,
-  type DistRecordData,
-  sha256Hex,
-  type TemplateSource,
-} from "@repository-fanout/core";
+import { BLOCK_END, BLOCK_START, sha256Hex, type TemplateSource } from "@repository-fanout/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/index.js";
-import { getDistRecord, putDistRecord } from "../../src/kv/distStore.js";
+import { getDistRecord, putDistRecord, type StoredDistRecord } from "../../src/kv/distStore.js";
 import {
   type ChildParams,
   type RepoPort,
@@ -119,12 +113,13 @@ describe("runChild wiring", () => {
   });
 
   it("canonical file removed + hash matches → deletion in PR, record kept (spec §5.4)", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };
     await putDistRecord(env.MANIFESTS, "bright-room", "bright-room/target", rec);
     const state: FakeRepoState = { files: { "old.yml": "OLD" }, commits: [], prs: [], bodies: {} };
+    const putSpy = vi.spyOn(env.MANIFESTS, "put");
     await runChild(env, params, fakeStep, {
       templates: memTemplates({}), // 正本から消えた
       io: fakeRepo(state),
@@ -132,10 +127,12 @@ describe("runChild wiring", () => {
     expect(state.commits[0]!.deletions).toEqual(["old.yml"]);
     const after = await getDistRecord(env.MANIFESTS, "bright-room", "bright-room/target");
     expect(after.files["old.yml"]).toBeDefined(); // merge 確認まで維持
+    expect(putSpy).not.toHaveBeenCalled(); // 記録は無変化 → KV write 節約(recordChanged=false)
+    putSpy.mockRestore();
   });
 
   it("modified file → kept, dropped from record, noted in PR body", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };
@@ -158,7 +155,7 @@ describe("runChild wiring", () => {
   });
 
   it("no diff → noop, but record cleanup still persisted", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "gone.yml": { strategy: "replace", hashes: ["h"] } }, // 実ファイル無し → 掃除
     };
@@ -216,7 +213,7 @@ describe("runChild wiring", () => {
   });
 
   it("kept files trigger a Discord notification (spec §5.7)", async () => {
-    const rec: DistRecordData = {
+    const rec: StoredDistRecord = {
       version: 1,
       files: { "old.yml": { strategy: "replace", hashes: [await sha256Hex("OLD")] } },
     };

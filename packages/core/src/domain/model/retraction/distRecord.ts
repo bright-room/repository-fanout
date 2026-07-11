@@ -2,16 +2,6 @@ import { Sha256 } from "../../type/sha256.js";
 
 export type DistStrategy = "replace" | "create-only";
 
-/** KV 境界を越える plain 形(spec v2 §5.3)。hashes は生 hex 履歴。 */
-export interface DistFileRecordData {
-  strategy: DistStrategy;
-  hashes: string[];
-}
-export interface DistRecordData {
-  version: 1;
-  files: Record<string, DistFileRecordData>;
-}
-
 /** 配布実績(recordDistribution の入力)。hash は Sha256。 */
 export interface Distributed {
   path: string;
@@ -32,7 +22,7 @@ export interface RetractionPlan {
   kept: KeptFile[];
 }
 
-/** planRetraction の入力。 */
+/** planRetraction の入力(P2 で隣接集約のモデル化とともに解体予定)。 */
 export interface RetractionArgs {
   /** 今回の望ましい状態に含まれる配布先パス(全戦略) */
   desiredPaths: string[];
@@ -42,59 +32,52 @@ export interface RetractionArgs {
   actual: Record<string, string>;
 }
 
-interface DistFileRecord {
-  strategy: DistStrategy;
-  hashes: Sha256[];
+/** ファイル1件の配布記録。ハッシュ履歴が「配った証明」(spec §4.7 matchesRecorded)を担う。 */
+export class DistFileRecord {
+  constructor(
+    readonly strategy: DistStrategy,
+    readonly hashes: readonly Sha256[],
+  ) {}
+
+  /** 記録ハッシュのいずれかと完全一致するか =「配った証明」。 */
+  matches(hash: Sha256): boolean {
+    return this.hashes.some((h) => h.equals(hash));
+  }
+
+  /** 配布を追記した新記録を返す(非破壊)。記録済みハッシュは重複させない。 */
+  withDistributed(strategy: DistStrategy, hash: Sha256): DistFileRecord {
+    const hashes = this.matches(hash) ? this.hashes : [...this.hashes, hash];
+    return new DistFileRecord(strategy, hashes);
+  }
 }
 
 /**
  * 配布記録(spec v2 §5.3)の集約。replace/create-only で「fanout が配ったファイル」を
  * リポ単位で記録し、記録照合型の削除の安全ガード(§5.4「配ったと証明できるものしか消さない」)を担う。
- * KV/step 境界は from(data)/toData() で越える(クラスは境界を越えない)。
+ * 保存形式(KV スキーマ・JSON)は関知しない — 永続化の載せ替えは apps 側 datasource の責務。
  */
 export class DistRecord {
-  private constructor(private readonly files: Map<string, DistFileRecord>) {}
+  private readonly fileRecords: Map<string, DistFileRecord>;
+
+  constructor(files: ReadonlyMap<string, DistFileRecord>) {
+    this.fileRecords = new Map(files);
+  }
 
   static empty(): DistRecord {
     return new DistRecord(new Map());
   }
 
-  /** KV 生値をパース。null(未記録)は空。未知 version は fail fast。 */
-  static parse(raw: string | null): DistRecord {
-    if (raw === null) return DistRecord.empty();
-    const o = JSON.parse(raw) as Partial<DistRecordData>;
-    if (o.version !== 1 || typeof o.files !== "object" || o.files === null) {
-      throw new Error(`dist record: unsupported shape (version=${String(o.version)})`);
-    }
-    return DistRecord.from({ version: 1, files: o.files });
-  }
-
-  /** 検証済み plain から復元。 */
-  static from(data: DistRecordData): DistRecord {
-    const files = new Map<string, DistFileRecord>();
-    for (const [path, rec] of Object.entries(data.files)) {
-      files.set(path, { strategy: rec.strategy, hashes: rec.hashes.map((h) => Sha256.fromHex(h)) });
-    }
-    return new DistRecord(files);
-  }
-
-  /** KV 保存用 plain(生 hex)。 */
-  toData(): DistRecordData {
-    const files: Record<string, DistFileRecordData> = {};
-    for (const [path, rec] of this.files) {
-      files[path] = { strategy: rec.strategy, hashes: rec.hashes.map((h) => h.value) };
-    }
-    return { version: 1, files };
+  /** 永続化マッピング用の読み出しアクセサ。 */
+  files(): ReadonlyMap<string, DistFileRecord> {
+    return this.fileRecords;
   }
 
   /** 配布(またはハッシュ一致採用)を追記した新レコードを返す(非破壊)。 */
   recordDistribution(distributed: Distributed[]): DistRecord {
-    const files = new Map(this.files);
+    const files = new Map(this.fileRecords);
     for (const d of distributed) {
-      const prev = files.get(d.path);
-      const hashes = prev ? [...prev.hashes] : [];
-      if (!hashes.some((h) => h.sameValue(d.hash))) hashes.push(d.hash);
-      files.set(d.path, { strategy: d.strategy, hashes });
+      const prev = files.get(d.path) ?? new DistFileRecord(d.strategy, []);
+      files.set(d.path, prev.withDistributed(d.strategy, d.hash));
     }
     return new DistRecord(files);
   }
@@ -108,9 +91,9 @@ export class DistRecord {
     const excluded = new Set(args.excluded);
     const deletions: string[] = [];
     const kept: KeptFile[] = [];
-    const files = new Map(this.files);
+    const files = new Map(this.fileRecords);
 
-    for (const [path, rec] of this.files) {
+    for (const [path, rec] of this.fileRecords) {
       if (desired.has(path)) continue;
       if (excluded.has(path)) {
         files.delete(path);
@@ -122,8 +105,7 @@ export class DistRecord {
         files.delete(path);
         continue;
       }
-      const hash = await Sha256.of(current);
-      if (rec.hashes.some((h) => h.sameValue(hash))) {
+      if (rec.matches(await Sha256.of(current))) {
         deletions.push(path);
       } else {
         files.delete(path);

@@ -17,12 +17,12 @@ export class Sha256 {
     return new Sha256(hex);
   }
 
-  /** 直列化用の生 hex。 */
-  get value(): string {
+  /** 生 hex 表現(直列化・表示用)。 */
+  toString(): string {
     return this.hex;
   }
 
-  sameValue(other: Sha256): boolean {
+  equals(other: Sha256): boolean {
     return this.hex === other.hex;
   }
 }

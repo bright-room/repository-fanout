@@ -49,11 +49,10 @@ export {
   StructuredDocument,
   StructuredParseError,
 } from "./domain/model/reconcile/structuredDocument.js";
-// retraction（DistRecord 集約に一本化）
+// retraction（DistRecord 集約に一本化。保存形式は apps 側 datasource の所有）
 export {
-  type DistFileRecordData,
+  DistFileRecord,
   DistRecord,
-  type DistRecordData,
   type Distributed,
   type DistStrategy,
   type KeptFile,

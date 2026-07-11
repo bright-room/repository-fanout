@@ -1,74 +1,66 @@
 import { describe, expect, it } from "vitest";
-import { DistRecord } from "../../../../src/domain/model/retraction/distRecord.js";
+import { DistFileRecord, DistRecord } from "../../../../src/domain/model/retraction/distRecord.js";
 import { Sha256 } from "../../../../src/domain/type/sha256.js";
 
-describe("DistRecord.parse / empty / from / toData", () => {
-  it("null(初回)は空レコード", () => {
-    expect(DistRecord.parse(null).toData()).toEqual({ version: 1, files: {} });
+const hexes = (record: DistRecord, path: string): string[] =>
+  [...(record.files().get(path)?.hashes ?? [])].map((h) => h.toString());
+
+describe("DistFileRecord", () => {
+  it("matches は記録ハッシュのいずれかと一致で true(配った証明)", () => {
+    const rec = new DistFileRecord("replace", [Sha256.fromHex("h1"), Sha256.fromHex("h2")]);
+    expect(rec.matches(Sha256.fromHex("h2"))).toBe(true);
+    expect(rec.matches(Sha256.fromHex("h9"))).toBe(false);
   });
-  it("保存済みレコードをパースし toData で往復できる", () => {
-    const raw = JSON.stringify({
-      version: 1,
-      files: { "a.txt": { strategy: "replace", hashes: ["h1"] } },
-    });
-    expect(DistRecord.parse(raw).toData()).toEqual({
-      version: 1,
-      files: { "a.txt": { strategy: "replace", hashes: ["h1"] } },
-    });
+  it("withDistributed は新ハッシュを追記し、記録済みは重複させない", () => {
+    const rec = new DistFileRecord("replace", [Sha256.fromHex("h1")]);
+    const appended = rec.withDistributed("replace", Sha256.fromHex("h2"));
+    expect(appended.hashes.map((h) => h.toString())).toEqual(["h1", "h2"]);
+    const same = rec.withDistributed("replace", Sha256.fromHex("h1"));
+    expect(same.hashes.map((h) => h.toString())).toEqual(["h1"]);
   });
-  it("未知 version は fail fast(spec §5.3)", () => {
-    expect(() => DistRecord.parse(JSON.stringify({ version: 2, files: {} }))).toThrow(
-      /unsupported/,
-    );
-  });
-  it("from(data) → toData() は等価(境界の載せ替え)", () => {
-    const data = {
-      version: 1 as const,
-      files: { "b.txt": { strategy: "create-only" as const, hashes: ["h9"] } },
-    };
-    expect(DistRecord.from(data).toData()).toEqual(data);
+  it("withDistributed は記録済みハッシュでも strategy を今回値に更新する", () => {
+    const rec = new DistFileRecord("replace", [Sha256.fromHex("h1")]);
+    const next = rec.withDistributed("create-only", Sha256.fromHex("h1"));
+    expect(next.strategy).toBe("create-only");
+    expect(next.hashes.map((h) => h.toString())).toEqual(["h1"]);
   });
 });
 
 describe("DistRecord.recordDistribution", () => {
-  it("新しいハッシュを履歴として追記する(spec §5.3)", async () => {
-    const rec = DistRecord.from({
-      version: 1,
-      files: { "a.txt": { strategy: "replace", hashes: ["h1"] } },
-    });
+  it("新しいハッシュを履歴として追記する(spec §5.3)", () => {
+    const rec = new DistRecord(
+      new Map([["a.txt", new DistFileRecord("replace", [Sha256.fromHex("h1")])]]),
+    );
     const next = rec.recordDistribution([
       { path: "a.txt", strategy: "replace", hash: Sha256.fromHex("h2") },
     ]);
-    expect(next.toData().files["a.txt"]!.hashes).toEqual(["h1", "h2"]);
+    expect(hexes(next, "a.txt")).toEqual(["h1", "h2"]);
   });
-  it("既に記録済みのハッシュは重複させない", async () => {
-    const rec = DistRecord.from({
-      version: 1,
-      files: { "a.txt": { strategy: "replace", hashes: ["h1"] } },
-    });
+  it("既に記録済みのハッシュは重複させない", () => {
+    const rec = new DistRecord(
+      new Map([["a.txt", new DistFileRecord("replace", [Sha256.fromHex("h1")])]]),
+    );
     const next = rec.recordDistribution([
       { path: "a.txt", strategy: "replace", hash: Sha256.fromHex("h1") },
     ]);
-    expect(next.toData().files["a.txt"]!.hashes).toEqual(["h1"]);
+    expect(hexes(next, "a.txt")).toEqual(["h1"]);
   });
-  it("新規パスを追加する", async () => {
+  it("新規パスを追加する", () => {
     const next = DistRecord.empty().recordDistribution([
       { path: "b.txt", strategy: "create-only", hash: Sha256.fromHex("h9") },
     ]);
-    expect(next.toData().files["b.txt"]).toEqual({ strategy: "create-only", hashes: ["h9"] });
+    expect(next.files().get("b.txt")?.strategy).toBe("create-only");
+    expect(hexes(next, "b.txt")).toEqual(["h9"]);
   });
-  it("入力の集約を変更しない(非破壊)", async () => {
+  it("入力の集約を変更しない(非破壊)", () => {
     const rec = DistRecord.empty();
     rec.recordDistribution([{ path: "x", strategy: "replace", hash: Sha256.fromHex("h") }]);
-    expect(rec.toData().files).toEqual({});
+    expect(rec.files().size).toBe(0);
   });
 });
 
 const recordOf = async (path: string, content: string): Promise<DistRecord> =>
-  DistRecord.from({
-    version: 1,
-    files: { [path]: { strategy: "replace", hashes: [(await Sha256.of(content)).value] } },
-  });
+  new DistRecord(new Map([[path, new DistFileRecord("replace", [await Sha256.of(content)])]]));
 
 describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
   it("ハッシュ一致 → 削除提案・記録は merge 確認まで維持", async () => {
@@ -78,19 +70,15 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
       actual: { "old.yml": "OLD" },
     });
     expect(r.deletions).toEqual(["old.yml"]);
-    expect(r.record.toData().files["old.yml"]).toBeDefined();
+    expect(r.record.files().has("old.yml")).toBe(true);
     expect(r.kept).toEqual([]);
   });
   it("履歴のいずれかと一致(時間差 merge)", async () => {
-    const rec = DistRecord.from({
-      version: 1,
-      files: {
-        "old.yml": {
-          strategy: "replace",
-          hashes: [(await Sha256.of("V1")).value, (await Sha256.of("V2")).value],
-        },
-      },
-    });
+    const rec = new DistRecord(
+      new Map([
+        ["old.yml", new DistFileRecord("replace", [await Sha256.of("V1"), await Sha256.of("V2")])],
+      ]),
+    );
     const r = await rec.planRetraction({
       desiredPaths: [],
       excluded: [],
@@ -105,7 +93,7 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
       actual: {},
     });
     expect(r.deletions).toEqual([]);
-    expect(r.record.toData().files["old.yml"]).toBeUndefined();
+    expect(r.record.files().has("old.yml")).toBe(false);
   });
   it("改変済み → 消さず記録から外し注記(残しすぎに倒す)", async () => {
     const r = await (await recordOf("old.yml", "OLD")).planRetraction({
@@ -114,7 +102,7 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
       actual: { "old.yml": "REPO-EDITED" },
     });
     expect(r.deletions).toEqual([]);
-    expect(r.record.toData().files["old.yml"]).toBeUndefined();
+    expect(r.record.files().has("old.yml")).toBe(false);
     expect(r.kept).toEqual([{ path: "old.yml", reason: "modified" }]);
   });
   it("まだ望ましいパスは候補にならない", async () => {
@@ -124,7 +112,7 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
       actual: { "keep.yml": "X" },
     });
     expect(r.deletions).toEqual([]);
-    expect(r.record.toData().files["keep.yml"]).toBeDefined();
+    expect(r.record.files().has("keep.yml")).toBe(true);
   });
   it("exclude → 引き渡し: 消さず記録から外し注記(spec §5.5)", async () => {
     const r = await (await recordOf("release.yml", "X")).planRetraction({
@@ -133,7 +121,7 @@ describe("DistRecord.planRetraction (spec §5.4/§5.5)", () => {
       actual: { "release.yml": "X" },
     });
     expect(r.deletions).toEqual([]);
-    expect(r.record.toData().files["release.yml"]).toBeUndefined();
+    expect(r.record.files().has("release.yml")).toBe(false);
     expect(r.kept).toEqual([{ path: "release.yml", reason: "excluded" }]);
   });
 });

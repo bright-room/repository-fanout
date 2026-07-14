@@ -662,8 +662,16 @@ import rego.v1
 deny contains msg if {
 	input.package_json != null
 	pm := object.get(input.package_json, "packageManager", "")
-	not startswith(pm, "pnpm@")
+	not pnpm_pinned(pm)
 	msg := "package.json: packageManager は pnpm@<version> 固定(corepack で pnpm を強制する)"
+}
+
+# object.get の default は「キー不在」時のみ効き、値が null だと null が返る。
+# collect-facts は packageManager 不在を null で出力するため、is_string ガードが無いと
+# startswith が eval_type_error で crash する(検証ゲートでなく本番 policy ジョブも落ちる)。
+pnpm_pinned(pm) if {
+	is_string(pm)
+	startswith(pm, "pnpm@")
 }
 
 deny contains msg if {

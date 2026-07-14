@@ -76,6 +76,18 @@ function parseManagedPaths(path: string, v: unknown): Record<string, ManagedPath
         `catalog.json: ${path}: managed_paths.${key}: merge must be "array" | "table"`,
       );
     }
+    if (spec.key !== undefined) {
+      if (spec.merge !== "array") {
+        throw new Error(
+          `catalog.json: ${path}: managed_paths.${key}: key is only for merge "array"`,
+        );
+      }
+      if (typeof spec.key !== "string" || spec.key.length === 0) {
+        throw new Error(
+          `catalog.json: ${path}: managed_paths.${key}: key must be a non-empty string`,
+        );
+      }
+    }
   }
   return v as unknown as Record<string, ManagedPathSpec>;
 }

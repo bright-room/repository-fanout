@@ -8,6 +8,8 @@ export type MergeKind = "array" | "table";
 
 export interface ManagedPathSpec {
   merge: MergeKind;
+  /** merge "array" のオブジェクト配列用: エントリの同一性を判定するフィールド名(spec 2026-07-14 §4.2) */
+  key?: string;
 }
 
 /** managed_paths 適用に必要な一式(DesiredFileData に載る plain 部分) */

@@ -1,0 +1,4 @@
+# gitleaks の誤検知(false positive)を fingerprint 単位で抑制する。
+# 過去コミット 86e4454 の計画ドキュメントに含まれる PEM 例示鍵。実鍵ではなく、
+# 現行ファイルにも存在しない履歴上のサンプル。spec §2.3 が想定する誤検知クラス。
+86e4454e557dc58e5c0a1374e827f3d96dd8cb62:docs/superpowers/plans/2026-06-26-p1-core.md:private-key:187

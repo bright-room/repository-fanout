@@ -8,7 +8,7 @@
 
 **Tech Stack:** GitHub Actions YAML + bash + jq + Terraform(kukv 側)
 
-**⚠️ 両タスクとも HOLD PR(P4 の切替ウィンドウまで merge しない)**: 現行デプロイ済み worker は HMAC のみ受け付けるため、新 worker デプロイ前に merge すると on-merge の kick が 401 で fail する。PR 本文に HOLD を明記すること。
+**[warn] 両タスクとも HOLD PR(P4 の切替ウィンドウまで merge しない)**: 現行デプロイ済み worker は HMAC のみ受け付けるため、新 worker デプロイ前に merge すると on-merge の kick が 401 で fail する。PR 本文に HOLD を明記すること。
 
 **参照(実在確認済みの現行実装)**:
 - organization-structure: `.github/scripts/fanout-sync.sh`(HMAC 版)/ `.github/workflows/on-merge.yml`(fanout-sync 呼び出しは 54-60 行目)/ `terraform/modules/repository/variables.tf:193-209`(languages/bundles/fanout_vars)/ `terraform/modules/repository/outputs.tf:16-23`(fanout_entry)/ `terraform/_fanout_manifest.tf`
@@ -116,7 +116,7 @@ jobs:
 
 - [ ] **Step 5: HOLD PR 作成**
 
-タイトル: `ci: fanout kick を OIDC 化+rekick 追加 — ⚠️ HOLD: P4 切替まで merge しない`
+タイトル: `ci: fanout kick を OIDC 化+rekick 追加 — [warn] HOLD: P4 切替まで merge しない`
 本文に必ず: HOLD の理由(新 worker デプロイ前に merge すると on-merge の kick が 401 で fail)・エンベロープ契約の変更・FANOUT_URL/FANOUT_HMAC_SECRET org secret への依存がなくなる旨(secret 撤去は P4)。
 
 ---

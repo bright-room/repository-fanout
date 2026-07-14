@@ -52,7 +52,7 @@ export async function notifyKeptFiles(
   if (!webhookUrl) return;
   const list = info.kept.map((k) => `${k.path} (${k.reason})`).join(", ");
   const content =
-    `⚠️ fanout kept files: ${info.repo} (account: ${info.account}) — ${list} (run: ${info.runId})`.slice(
+    `[warn] fanout kept files: ${info.repo} (account: ${info.account}) — ${list} (run: ${info.runId})`.slice(
       0,
       1900,
     );

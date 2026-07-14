@@ -156,6 +156,67 @@ test("G3: base の PR/ISSUE テンプレが正しい中身で描画され config
   expect(cfg.content).not.toContain("{{");
 });
 
+const PRECOMMIT_FILES: Record<string, string> = {
+  "catalog.json": JSON.stringify({
+    files: {
+      ".pre-commit-config.yaml": {
+        file_type: "yaml",
+        mode: "managed",
+        managed_paths: { repos: { merge: "array", key: "repo" } },
+      },
+    },
+  }),
+  "profiles/base/contributes.json": JSON.stringify({
+    ".pre-commit-config.yaml": {
+      repos: [
+        { repo: "https://github.com/gitleaks/gitleaks", rev: "v8.30.0", hooks: [{ id: "gitleaks" }] },
+      ],
+    },
+  }),
+  "profiles/go/contributes.json": JSON.stringify({
+    ".pre-commit-config.yaml": {
+      repos: [{ repo: "https://github.com/example/go-hook", rev: "v1.0.0", hooks: [{ id: "go-hook" }] }],
+    },
+  }),
+};
+
+test("keyed array: universe は全 profile の key 値、data は宣言 profile のみ、createContent は正準 YAML", async () => {
+  const entries = await deriveDesiredFiles({
+    source: memorySourceV3(PRECOMMIT_FILES),
+    languages: [],
+    bundles: [],
+    contents: {},
+    exclude: [],
+  });
+  const pc = entries.find((e) => e.path === ".pre-commit-config.yaml");
+  if (pc?.strategy !== "structured-managed") throw new Error("unexpected strategy");
+  expect(pc.universe.repos).toEqual(
+    expect.arrayContaining([
+      "https://github.com/gitleaks/gitleaks",
+      "https://github.com/example/go-hook",
+    ]),
+  );
+  expect((pc.data.repos as unknown[]).length).toBe(1);
+  expect(pc.createContent).toContain("repo: https://github.com/gitleaks/gitleaks");
+});
+
+test("keyed array: 寄与エントリに識別キーが無ければ fail fast", async () => {
+  await expect(
+    deriveDesiredFiles({
+      source: memorySourceV3({
+        ...PRECOMMIT_FILES,
+        "profiles/go/contributes.json": JSON.stringify({
+          ".pre-commit-config.yaml": { repos: [{ rev: "v1.0.0" }] },
+        }),
+      }),
+      languages: [],
+      bundles: [],
+      contents: {},
+      exclude: [],
+    }),
+  ).rejects.toThrow(/識別キー "repo" がない/);
+});
+
 test("fail fast: 未知 profile / 未登録パス / template 不在", async () => {
   await expect(
     deriveDesiredFiles({ source: memorySourceV3(FILES), ...baseArgs, languages: ["ruby"] }),

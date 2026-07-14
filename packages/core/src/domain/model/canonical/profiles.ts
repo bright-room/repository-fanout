@@ -64,12 +64,29 @@ export class Profiles {
     const universe: Record<string, string[]> = {};
     for (const [key, spec] of Object.entries(managedPaths)) {
       const values: string[] = [];
-      for (const pc of this.byProfile.values()) {
+      for (const [profile, pc] of this.byProfile) {
         const v = pc.contributionFor(path)?.[key];
         if (v === undefined) continue;
         if (spec.merge === "array") {
-          if (Array.isArray(v)) values.push(...v.map(String));
-          else if (typeof v === "string") values.push(v);
+          if (spec.key !== undefined) {
+            if (!Array.isArray(v)) continue;
+            for (const e of v) {
+              const k =
+                isPlainObject(e) && typeof e[spec.key] === "string"
+                  ? (e[spec.key] as string)
+                  : undefined;
+              if (k === undefined) {
+                throw new Error(
+                  `${path}: profiles/${profile} の ${key} 寄与エントリに識別キー "${spec.key}" がない`,
+                );
+              }
+              values.push(k);
+            }
+          } else if (Array.isArray(v)) {
+            values.push(...v.map(String));
+          } else if (typeof v === "string") {
+            values.push(v);
+          }
         } else if (isPlainObject(v)) {
           values.push(...Object.keys(v));
         }

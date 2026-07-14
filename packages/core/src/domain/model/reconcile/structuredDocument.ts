@@ -38,6 +38,43 @@ export function mergeManagedArray(actual: unknown, managed: unknown, universe: s
   return dedupePreserveOrder([...normalizeToArray(managed), ...repoOwn]);
 }
 
+/** keyed array のエントリから識別キー値を取り出す。判定不能(非オブジェクト / key が文字列でない)は undefined */
+function keyOf(entry: unknown, key: string): string | undefined {
+  if (!isPlainObject(entry)) return undefined;
+  const v = entry[key];
+  return typeof v === "string" ? v : undefined;
+}
+
+/**
+ * merge: "array" + key(spec 2026-07-14 §4.2)。mergeManagedArray のオブジェクト配列への一般化:
+ * 望ましい値 = 管理エントリ(正準順・key 重複は先勝ち) ++ key が universe 外 or 判定不能なリポ独自エントリ(相対順保持)。
+ * 判定不能エントリを温存するのは「fanout が配ったと証明できないものは触らない」原則(spec v2 §5.4)と同じ倒し方。
+ */
+export function mergeManagedKeyedArray(
+  actual: unknown,
+  managed: unknown,
+  universe: string[],
+  key: string,
+): unknown[] {
+  const universeSet = new Set(universe);
+  const seen = new Set<string>();
+  const canonical: unknown[] = [];
+  for (const e of Array.isArray(managed) ? managed : []) {
+    const k = keyOf(e, key);
+    if (k === undefined) {
+      throw new Error(`managed array entry without key "${key}": ${JSON.stringify(e)}`);
+    }
+    if (seen.has(k)) continue;
+    seen.add(k);
+    canonical.push(e);
+  }
+  const repoOwn = (Array.isArray(actual) ? actual : []).filter((e) => {
+    const k = keyOf(e, key);
+    return k === undefined || !universeSet.has(k);
+  });
+  return [...canonical, ...repoOwn];
+}
+
 /**
  * merge: "table"(spec v3 §6.2)。管理キーは寄与値、universe 外のリポ独自キーは温存。
  * 寄与が消えた universe キーは削除(retraction)。
@@ -178,15 +215,18 @@ function mergedFor(spec: ManagedPathsSpec, key: string, actualValue: unknown): u
   const s = spec.managedPaths[key];
   if (!s) throw new Error(`unreachable: no managed path spec for ${key}`);
   const universe = spec.universe[key] ?? [];
-  return s.merge === "array"
-    ? mergeManagedArray(actualValue, spec.data[key], universe)
-    : mergeManagedTable(actualValue, spec.data[key], universe);
+  if (s.merge === "table") return mergeManagedTable(actualValue, spec.data[key], universe);
+  if (s.key !== undefined) return mergeManagedKeyedArray(actualValue, spec.data[key], universe, s.key);
+  return mergeManagedArray(actualValue, spec.data[key], universe);
 }
 
 /** no-op 判定用: 実ファイル側の現在値をマージ結果と同じ形へ正準化して比較 */
 function normalizedCurrent(spec: ManagedPathsSpec, key: string, value: unknown): unknown {
   const s = spec.managedPaths[key];
   if (!s) throw new Error(`unreachable: no managed path spec for ${key}`);
-  if (s.merge === "array") return normalizeToArray(value);
+  if (s.merge === "array") {
+    if (s.key !== undefined) return Array.isArray(value) ? value : [];
+    return normalizeToArray(value);
+  }
   return isPlainObject(value) ? value : {};
 }

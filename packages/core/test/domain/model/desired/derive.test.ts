@@ -169,13 +169,19 @@ const PRECOMMIT_FILES: Record<string, string> = {
   "profiles/base/contributes.json": JSON.stringify({
     ".pre-commit-config.yaml": {
       repos: [
-        { repo: "https://github.com/gitleaks/gitleaks", rev: "v8.30.0", hooks: [{ id: "gitleaks" }] },
+        {
+          repo: "https://github.com/gitleaks/gitleaks",
+          rev: "v8.30.0",
+          hooks: [{ id: "gitleaks" }],
+        },
       ],
     },
   }),
   "profiles/go/contributes.json": JSON.stringify({
     ".pre-commit-config.yaml": {
-      repos: [{ repo: "https://github.com/example/go-hook", rev: "v1.0.0", hooks: [{ id: "go-hook" }] }],
+      repos: [
+        { repo: "https://github.com/example/go-hook", rev: "v1.0.0", hooks: [{ id: "go-hook" }] },
+      ],
     },
   }),
 };

@@ -142,26 +142,25 @@ const PRECOMMIT: ManagedPathsSpec = {
 };
 
 test("keyed array: 管理エントリは正準順で収束、universe 外・key 判定不能は温存、寄与が消えた universe キーは削除", () => {
+  const universe = PRECOMMIT.universe.repos ?? [];
   const actual = [
     { repo: "local", hooks: [{ id: "golangci-lint" }] },
     { repo: "https://github.com/gitleaks/gitleaks", rev: "v8.0.0", hooks: [{ id: "gitleaks" }] },
     { repo: "https://github.com/retired/hook", rev: "v1" },
     { note: "no key field" },
   ];
-  expect(
-    mergeManagedKeyedArray(actual, PRECOMMIT.data.repos, PRECOMMIT.universe.repos, "repo"),
-  ).toEqual([
+  expect(mergeManagedKeyedArray(actual, PRECOMMIT.data.repos, universe, "repo")).toEqual([
     GITLEAKS,
     TEXTHOOKS,
     { repo: "local", hooks: [{ id: "golangci-lint" }] },
     { note: "no key field" },
   ]);
   expect(
-    mergeManagedKeyedArray([], [GITLEAKS, { ...GITLEAKS, rev: "v0" }], PRECOMMIT.universe.repos, "repo"),
+    mergeManagedKeyedArray([], [GITLEAKS, { ...GITLEAKS, rev: "v0" }], universe, "repo"),
   ).toEqual([GITLEAKS]);
-  expect(() =>
-    mergeManagedKeyedArray([], [{ rev: "v1" }], PRECOMMIT.universe.repos, "repo"),
-  ).toThrow(/without key "repo"/);
+  expect(() => mergeManagedKeyedArray([], [{ rev: "v1" }], universe, "repo")).toThrow(
+    /without key "repo"/,
+  );
 });
 
 test("yaml keyed: .pre-commit-config.yaml の repos だけ収束し、リポ独自 local hook・コメントを温存", () => {

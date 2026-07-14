@@ -216,7 +216,8 @@ function mergedFor(spec: ManagedPathsSpec, key: string, actualValue: unknown): u
   if (!s) throw new Error(`unreachable: no managed path spec for ${key}`);
   const universe = spec.universe[key] ?? [];
   if (s.merge === "table") return mergeManagedTable(actualValue, spec.data[key], universe);
-  if (s.key !== undefined) return mergeManagedKeyedArray(actualValue, spec.data[key], universe, s.key);
+  if (s.key !== undefined)
+    return mergeManagedKeyedArray(actualValue, spec.data[key], universe, s.key);
   return mergeManagedArray(actualValue, spec.data[key], universe);
 }
 

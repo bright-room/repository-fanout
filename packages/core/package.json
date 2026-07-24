@@ -18,8 +18,8 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "liquidjs": "^10.27.1",
-    "smol-toml": "^1.7.0",
-    "yaml": "^2.9.0"
+    "liquidjs": "10.27.2",
+    "smol-toml": "1.7.0",
+    "yaml": "2.9.0"
   }
 }

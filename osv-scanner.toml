@@ -11,3 +11,15 @@
 # ignoreUntil = 2026-12-31
 # reason = "transitive dep で fix 未リリース。上流の更新を待つ。"
 # ---------------------------------------------------------------------------
+
+# sharp 0.34.5 (libvips の GIF/TIFF/VIPS デコーダ脆弱性)。
+# fix は sharp 0.35.0+ だが、これを引くのは miniflare 4.20260722.0 のみで、
+# 経路は wrangler 4.114.0 / @cloudflare/vitest-pool-workers 0.18.8 (共に 2026-07-23 公開)。
+# pnpm-workspace.yaml の minimumReleaseAge = 7 日により 2026-07-30 頃までインストール不可。
+# sharp は dev 専用の推移依存 (miniflare の Images binding ローカルエミュレーション) で
+# 本番 Worker バンドルには含まれず、信頼できない画像入力も処理しない。
+# 検疫明けに renovate が wrangler 系を上げたらこのエントリを削除すること。
+[[IgnoredVulns]]
+id = "GHSA-f88m-g3jw-g9cj"
+ignoreUntil = 2026-08-08
+reason = "sharp 0.35+ を引く wrangler 4.114.0 が minimumReleaseAge (7日) で 2026-07-30 までインストール不可。dev 専用の推移依存で本番バンドル外。"

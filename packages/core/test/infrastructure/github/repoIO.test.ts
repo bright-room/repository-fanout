@@ -87,7 +87,7 @@ it("commitChanges includes deletions as sha:null tree entries (spec §5.8)", asy
     create: false,
   });
   const treeReq = requests.find((r) => r.url.endsWith("/git/trees"));
-  expect((treeReq?.body as { tree: unknown[] }).tree).toContainEqual({
+  expect((treeReq?.body as { tree: unknown[] } | undefined)?.tree).toContainEqual({
     path: "old.yml",
     mode: "100644",
     type: "blob",

@@ -10,7 +10,7 @@ function fakeFetch(handler: (url: string, init?: RequestInit) => Response) {
 test("request sends auth header and returns parsed json", async () => {
   const fetchImpl = fakeFetch((url, init) => {
     expect(url).toBe("https://api.github.com/repos/o/r");
-    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer tok");
+    expect((init?.headers as Record<string, string> | undefined)?.Authorization).toBe("Bearer tok");
     return new Response(JSON.stringify({ full_name: "o/r" }), { status: 200 });
   });
   const gh = new GitHubClient({ token: "tok", fetchImpl });

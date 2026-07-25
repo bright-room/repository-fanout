@@ -15,9 +15,9 @@
   "dependencies": { "@repository-fanout/core": "workspace:*" },
   "devDependencies": {
     "@repository-fanout/tsconfig": "workspace:*",
-    "typescript": "^5.6.0",
+    "typescript": "5.9.3",
     "tsx": "4.23.1",
     "vitest": "^4.1.9",
-    "@types/node": "^24.0.0"
+    "@types/node": "24.13.3"
   }
 }

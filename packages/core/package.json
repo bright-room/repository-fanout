@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "liquidjs": "10.27.2",
-    "smol-toml": "1.7.0",
+    "smol-toml": "1.7.1",
     "yaml": "2.9.0"
   }
 }

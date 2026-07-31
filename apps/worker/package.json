@@ -16,6 +16,6 @@
     "@repository-fanout/tsconfig": "workspace:*",
     "typescript": "5.9.3",
     "vitest": "4.1.10",
-    "wrangler": "4.112.0"
+    "wrangler": "4.115.0"
   }
 }
